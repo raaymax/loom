@@ -4,6 +4,7 @@ mod tokenizer;
 mod parser;
 mod loc;
 mod iter;
+mod interpreter;
 
 
 use token::{Token, TokenVec};
@@ -17,7 +18,7 @@ fn tokenize(text: &str) -> Result<Vec<Token>, PError> {
 fn main() {
     let text = if let Some(path) = std::env::args().nth(1) {
         std::fs::read_to_string(path).unwrap_or_else(|e| {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: \n{}", e);
             std::process::exit(1);
         })
     } else {
@@ -28,15 +29,22 @@ fn main() {
 
     println!("\nINPUT:\t{}", text);
     let mut tokens = tokenize(&text).unwrap_or_else(|e| {
-        eprintln!("Error: {}", e.format_error(&text));
+        eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
     println!("\nTOKENS:\t{}", TokenVec(&tokens));
     let node = parser::parse(&mut tokens).unwrap_or_else(|e| {
-        eprintln!("Error: {}", e.format_error(&text));
+        eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
     println!("\nTREE:\t{}", node);
+    
+    let value = interpreter::interpret(&node).unwrap_or_else(|e| {
+        eprintln!("Error: \n{}", e);
+        std::process::exit(1);
+    });
+
+    println!("\nOUTPUT:\t{}", value);
 }
 
 #[cfg(test)]
@@ -53,7 +61,9 @@ mod tests {
         ( $name:ident, $i:expr, $o:expr ) => {
             #[test]
             fn $name() {
-                let node = parse($i).unwrap();
+                let node = parse($i).unwrap_or_else(|e| {
+                    panic!("\nError:\n{}\n", e.format_error($i));
+                });
                 assert_eq!(node.to_string(), $o);
             }
         };
@@ -96,8 +106,11 @@ mod tests {
                  "01x23 adw\nasd", 
                  "01x23 adw\n  ^^     \nInvalid number");
 
+    test_parser!(expr_number_in_braces, 
+                 "(1)", 
+                 "1");
 
-    test_parser!(expr_sumple, 
+    test_parser!(expr_simple, 
                  "1 + 2", 
                  "(1 + 2)");
 
@@ -110,4 +123,31 @@ mod tests {
     test_parser!(expr_complex_no_spaces, 
                  "0x123/(2+123)+23*010*(num-4)", 
                  "((291 / (2 + 123)) + ((23 * 8) * (num - 4)))");
+    test_parser_error!(expr_incomplete, 
+                 "12+", 
+                 "Unexpected end of file");
+    test_parser_error!(expr_incomplete_with_brace, 
+                 "12+(", 
+                 "Unexpected end of file");
+    test_parser_error!(expr_incomplete_with_brace_and_number, 
+                 "12+(123", 
+                 "Unexpected end of file");
+    test_parser_error!(expr_incomplete_with_brace_and_number_and_plus, 
+                 "12+(123+", 
+                 "Unexpected end of file");
+    test_parser_error!(expr_only_operator,
+                 "+", 
+                 "+\n^\nInvalid expression, expected ID or Number");
+    test_parser_error!(expr_missing_operator,
+                 "123 321", 
+                 "123 321\n    ^^^\nInvalid expression, expected operator or semicolon");
+    test_parser_error!(expr_with_nested_braces,
+                 "((((123)))", 
+                 "Unexpected end of file");
+    test_parser_error!(expr_just_braces_instead_of_operand,
+                 "123 + ()", 
+                 "123 + ()\n       ^\nInvalid expression, expected ID or Number");
+    test_parser_error!(expr_just_braces,
+                 "()", 
+                 "()\n ^\nInvalid expression, expected ID or Number");
 }

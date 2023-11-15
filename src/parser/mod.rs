@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::slice::Iter;
 
+use crate::loc::Location;
 use crate::token::Token;
 use crate::errors::PError;
 
@@ -55,27 +56,30 @@ impl Display for OptionalNode<'_> {
 
 #[derive(Debug)]
 pub struct Node {
-    op: Op,
-    id: Option<String>,
-    value: Option<u32>,
-    left: Option<Box<Node>>, 
-    right: Option<Box<Node>>
+    pub op: Op,
+    pub location: Location,
+    pub id: Option<String>,
+    pub value: Option<u32>,
+    pub left: Option<Box<Node>>, 
+    pub right: Option<Box<Node>>
 }
 
 impl Node {
-    pub fn new(op: Op, value: Option<u32>) -> Self {
+    pub fn new(op: Op, value: Option<u32>, location: Location) -> Self {
         Self {
             op,
             id: None,
+            location,
             value,
             left: None,
             right: None,
         }
     }
-    pub fn new_var(op: Op, id: &str) -> Self {
+    pub fn new_var(op: Op, id: &str, location: Location) -> Self {
         Self {
             op,
             id: Some(id.to_string()),
+            location,
             value: None,
             left: None,
             right: None,
@@ -119,26 +123,100 @@ impl From<Node> for Option<Box<Node>> {
     }
 }
 
-pub fn build(iter: &mut Iter<Token>) -> Result<Node, PError> {
-    let mut tree: Node = Node::new(Op::Root, None);
-    while let Some(token) = iter.next() {
-        match token {
-            Token::Number(_, n) => tree.add(Node::new(Op::Def, Some(*n))),
-            Token::Id(_, ref n) => tree.add(Node::new_var(Op::Def, n)),
-            Token::Plus(_) => tree.add(Node::new(Op::Add, None)),
-            Token::Minus(_) => tree.add(Node::new(Op::Sub, None)),
-            Token::Star(_) => tree.add(Node::new(Op::Mul, None)),
-            Token::Slash(_) => tree.add(Node::new(Op::Div, None)),
-            Token::LParen(_) => tree.add(build(iter)?),
-            Token::RParen(_) => break,
-            _ => {}
+
+enum State {
+    Noun,
+    Operator,
+    End
+}
+
+impl State {
+    fn expect(&self, tree:  &mut Node, iter: &mut Iter<Token>, level: usize) -> Result<State, PError> {
+        let Some(token) = iter.next() else {
+            return Ok(State::End);
+        };
+        match self {
+            Self::Noun => {
+                match token {
+                    Token::Number(loc, n) => {
+                        tree.add(Node::new(Op::Def, Some(*n), *loc));
+                        Ok(Self::Operator)
+                    },
+                    Token::Id(loc, ref n) => {
+                        tree.add(Node::new_var(Op::Def, n, *loc));
+                        Ok(Self::Operator)
+                    },
+                    Token::LParen(loc) => {
+                        tree.add(build(iter, level + 1, *loc)?);
+                        Ok(Self::Operator)
+                    },
+                    Token::Eof => {
+                        Err(PError::new(token.get_location(), "Unexpected end of file"))
+                    }
+                    _ => {
+                        Err(PError::new(token.get_location(), "Invalid expression, expected ID or Number"))
+                    }
+                }
+            },
+            Self::Operator => {
+                match token {
+                    Token::Plus(loc) => {
+                        tree.add(Node::new(Op::Add, None, *loc));
+                        Ok(Self::Noun)
+                    },
+                    Token::Minus(loc) => {
+                        tree.add(Node::new(Op::Sub, None, *loc));
+                        Ok(Self::Noun)
+                    }
+                    Token::Star(loc) => {
+                        tree.add(Node::new(Op::Mul, None, *loc));
+                        Ok(Self::Noun)
+                    }
+                    Token::Slash(loc) => {
+                        tree.add(Node::new(Op::Div, None, *loc));
+                        Ok(Self::Noun)
+                    }
+                    Token::RParen(_) => {
+                        Ok(Self::End)
+                    },
+                    Token::Semi(_) => {
+                        if level > 0 {
+                            return Err(PError::new(token.get_location(), "Unexpected end of expression"));
+                        }
+                        Ok(Self::End)
+                    },
+                    Token::Eof => {
+                        if level > 0 {
+                            return Err(PError::new(token.get_location(), "Unexpected end of file"));
+                        }
+                        Ok(Self::End)
+                    },
+                    _ => {
+                        Err(PError::new(token.get_location(), "Invalid expression, expected operator or semicolon"))
+                    }
+                }
+
+            },
+            Self::End => Ok(Self::End)
         }
     }
-    Ok(tree)
+}
+
+
+
+pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Node, PError> {
+    let mut tree: Node = Node::new(Op::Root, None, loc);
+    let mut state = State::Noun;
+    loop {
+        state = state.expect(&mut tree, iter, level)?;
+        if let State::End = state {
+            return Ok(tree);
+        }
+    }
 }
 
 pub fn parse(tokens: &mut Vec<Token>) -> Result<Node, PError> {
     let mut iter = tokens.iter();
-    build(&mut iter)
+    build(&mut iter, 0, Location::new_point(0,0,0))
 }
 

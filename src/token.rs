@@ -35,6 +35,25 @@ impl Display for Token {
 }
 
 
+impl Token {
+    pub fn get_location(&self) -> Location {
+        match self {
+            Token::Number(pos, ..) => *pos,
+            Token::Id(pos, ..) => *pos,
+            Token::Plus(pos) => *pos,
+            Token::Eq(pos) => *pos,
+            Token::Minus(pos) => *pos,
+            Token::Star(pos) => *pos,
+            Token::Slash(pos) => *pos,
+            Token::LParen(pos) => *pos,
+            Token::RParen(pos) => *pos,
+            Token::Eof => Location::Eof,
+            Token::Semi(pos) => *pos,
+        }
+    }
+}
+
+
 pub struct TokenVec<'a>(pub &'a Vec<Token>);
 
 impl Display for TokenVec<'_> {
