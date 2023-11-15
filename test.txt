@@ -1,8 +1,12 @@
+// comment on start
 asd = 10;
 oko = "t"*5;
+/*
+  * multiline comment
+  */
 test = "dupa";
 qwe = "other string with 123 + 321";
 zxc = 'string with spaces';
 result = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
-oko + 5 + " super " + 
+oko + 5 + " super " + // some comment
 test + " RESULT: " + result
