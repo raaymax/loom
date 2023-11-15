@@ -1,6 +1,8 @@
 asd = 10;
+oko = "t"*5;
 test = "dupa";
 qwe = "other string with 123 + 321";
 zxc = 'string with spaces';
-0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
-(test / 5) * (2 * 3)
+result = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
+oko + 5 + " super " + 
+test + " RESULT: " + result

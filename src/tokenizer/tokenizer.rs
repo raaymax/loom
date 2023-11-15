@@ -28,55 +28,51 @@ impl<'a> Tokenizer<'a> {
         p.set_range(length)
     }
 
-    pub fn get_next(&mut self) -> Result<Token, PError> {
-        while let Some((p, c)) = self.it.clone().next() {
-            match c {
-                '0'..='9' => {
-                    let (size, num) = number(&mut self.it)?;
-                    return Ok(Token::Number(p.set_range(size), num)); 
-                },
-                'a'..='z' | 'A'..='Z' => {
-                    let (size, text) = id(&mut self.it)?;
-                    return Ok(Token::Id(p.set_range(size), text)); 
-                }
-                '+' => {
-                    return Ok(Token::Plus(self.get_location(1)));
-                },
-                '-' => {
-                    return Ok(Token::Minus(self.get_location(1)));
-                },
-                '=' => {
-                    return Ok(Token::Eq(self.get_location(1)));
-                },
-                '*' => {
-                    return Ok(Token::Star(self.get_location(1)));
-                },
-                '/' => {
-                    return Ok(Token::Slash(self.get_location(1)));
-                },
-                '(' => {
-                    return Ok(Token::LParen(self.get_location(1)));
-                },
-                ')' => {
-                    return Ok(Token::RParen(self.get_location(1)));
-                },
-                ';' => {
-                    return Ok(Token::Semi(self.get_location(1)));
-                },
-                '\'' | '"' => {
-                    let (size, num) = string(&mut self.it)?;
-                    return Ok(Token::String(p.set_range(size), num)); 
-                },
-                '\n' | ' ' => {
-                    self.it.next();
-                }
-                _ => {
-                    return Err(PError::new(p.to_point(), "Unexpected character"));
-                }
+    fn ignore_white_spaces(&mut self) {
+        while let Some((_, c)) = self.it.clone().next() {
+            if c == ' ' || c == '\n' {
+                self.it.next();
+            } else {
+                break;
             }
         }
-        self.finished = true;
-        Ok(Token::Eof)
+    }
+
+    pub fn get_next(&mut self) -> Result<Token, PError> {
+        let Some((p, c)) = self.it.clone().next() else {
+            self.finished = true;
+            return Ok(Token::Eof)
+        };
+        match c {
+            '0'..='9' => {
+                let (size, num) = number(&mut self.it)?;
+                Ok(Token::Number(p.set_range(size), num))
+            },
+            'a'..='z' | 'A'..='Z' => {
+                let (size, text) = id(&mut self.it)?;
+                Ok(Token::Id(p.set_range(size), text))
+            }
+            '+' =>  Ok(Token::Plus(self.get_location(1))),
+            '-' =>  Ok(Token::Minus(self.get_location(1))),
+            '=' => Ok(Token::Eq(self.get_location(1))),
+            '*' => Ok(Token::Star(self.get_location(1))),
+            '/' => Ok(Token::Slash(self.get_location(1))),
+            '(' => Ok(Token::LParen(self.get_location(1))),
+            ')' => Ok(Token::RParen(self.get_location(1))),
+            '{' => Ok(Token::LBrace(self.get_location(1))),
+            '}' => Ok(Token::RBrace(self.get_location(1))),
+            ';' => Ok(Token::Semi(self.get_location(1))),
+            ':' => Ok(Token::Colon(self.get_location(1))),
+            '\'' | '"' => {
+                let (size, num) = string(&mut self.it)?;
+                Ok(Token::String(p.set_range(size), num))
+            },
+            '\n' | ' ' => {
+                self.ignore_white_spaces();
+                self.get_next()
+            }
+            _ => Err(PError::new(p.to_point(), "Unexpected character"))
+        }
     }
 
 }

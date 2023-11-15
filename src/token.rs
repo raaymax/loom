@@ -12,9 +12,12 @@ pub enum Token {
     Slash(Location),
     LParen(Location),
     RParen(Location),
+    LBrace(Location),
+    RBrace(Location),
     Eof,
     Semi(Location),
     String(Location, String),
+    Colon(Location),
 }
 
 impl Display for Token {
@@ -32,6 +35,9 @@ impl Display for Token {
             Token::Eof => write!(f, "EOF"),
             Token::Semi(pos) => write!(f, "Semi {}", pos),
             Token::String(pos, v) => write!(f, "String {} ( value: \"{}\")", pos, v),
+            Token::Colon(pos) => write!(f, "Colon {}", pos),
+            Token::LBrace(pos) => write!(f, "LBrace {}", pos),
+            Token::RBrace(pos) => write!(f, "RBrace {}", pos),
         }
     }
 }
@@ -52,6 +58,9 @@ impl Token {
             Token::Eof => Location::Eof,
             Token::Semi(pos) => *pos,
             Token::String(pos, _) => *pos,
+            Token::Colon(pos) => *pos,
+            Token::LBrace(pos) => *pos,
+            Token::RBrace(pos) => *pos,
         }
     }
 }
