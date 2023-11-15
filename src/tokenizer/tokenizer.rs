@@ -1,4 +1,5 @@
 use super::number::number;
+use super::string::string;
 use super::id::id;
 use crate::token::Token;
 use crate::iter::LocationIterator;
@@ -61,6 +62,10 @@ impl<'a> Tokenizer<'a> {
                 },
                 ';' => {
                     return Ok(Token::Semi(self.get_location(1)));
+                },
+                '\'' | '"' => {
+                    let (size, num) = string(&mut self.it)?;
+                    return Ok(Token::String(p.set_range(size), num)); 
                 },
                 '\n' | ' ' => {
                     self.it.next();

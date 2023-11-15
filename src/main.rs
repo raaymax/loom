@@ -7,12 +7,25 @@ mod iter;
 mod interpreter;
 
 
+use std::fmt::Display;
+
 use token::{Token, TokenVec};
 use tokenizer::Tokenizer;
 use errors::PError;
 
 fn tokenize(text: &str) -> Result<Vec<Token>, PError> {
     Tokenizer::new(text).collect()
+}
+
+struct NodeVec<'a>(&'a Vec<parser::Node>);
+impl Display for NodeVec<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for node in self.0 {
+            writeln!(f, "\t{}", node)?;
+        }
+        Ok(())
+    }
 }
 
 fn main() {
@@ -28,18 +41,21 @@ fn main() {
     };
 
     println!("\nINPUT:\t{}", text);
-    let mut tokens = tokenize(&text).unwrap_or_else(|e| {
+    let tokens = tokenize(&text).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
     println!("\nTOKENS:\t{}", TokenVec(&tokens));
-    let node = parser::parse(&mut tokens).unwrap_or_else(|e| {
+
+    let mut iter = tokens.iter();
+    let nodes = parser::parse(&mut iter).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
-    println!("\nTREE:\t{}", node);
+
+    println!("\nTREEs:\t{}", NodeVec(&nodes));
     
-    let value = interpreter::interpret(&node).unwrap_or_else(|e| {
+    let value = interpreter::interpret(&nodes).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e);
         std::process::exit(1);
     });
@@ -51,9 +67,10 @@ fn main() {
 mod tests {
     use super::*;
 
-    fn parse(text: &str) -> Result<parser::Node, PError> {
-        let mut tokens = tokenize(text)?;
-        parser::parse(&mut tokens)
+    fn parse(text: &str) -> Result<Vec<parser::Node>, PError> {
+        let tokens = tokenize(text)?;
+        let mut iter = tokens.iter();
+        parser::parse(&mut iter)
     }
 
     #[macro_export]
@@ -61,10 +78,10 @@ mod tests {
         ( $name:ident, $i:expr, $o:expr ) => {
             #[test]
             fn $name() {
-                let node = parse($i).unwrap_or_else(|e| {
+                let nodes = parse($i).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
-                assert_eq!(node.to_string(), $o);
+                assert_eq!(nodes.first().unwrap().to_string(), $o);
             }
         };
     }
@@ -75,6 +92,38 @@ mod tests {
             fn $name() {
                 let text = $i;
                 let err = parse(text).unwrap_err();
+                assert_eq!(err.format_error(text), $o);
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! test_compute{
+        ( $name:ident, $i:expr, $o:expr ) => {
+            #[test]
+            fn $name() {
+                let text = $i;
+                let nodes = parse(text).unwrap_or_else(|e| {
+                    panic!("\nError:\n{}\n", e.format_error($i));
+                });
+                let value = interpreter::interpret(&nodes).unwrap_or_else(|e| {
+                    panic!("\nError:\n{}\n", e.format_error($i));
+                });
+                assert_eq!(value, $o.into());
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! test_compute_error{
+        ( $name:ident, $i:expr, $o:expr ) => {
+            #[test]
+            fn $name() {
+                let text = $i;
+                let nodes = parse(text).unwrap_or_else(|e| {
+                    panic!("\nError:\n{}\n", e.format_error($i));
+                });
+                let err = interpreter::interpret(&nodes).unwrap_err();
                 assert_eq!(err.format_error(text), $o);
             }
         };
@@ -96,13 +145,13 @@ mod tests {
     test_parser_error!(number_oct_with_hex_error, 
                  "012a", 
                  "012a\n   ^\nInvalid number");
-    test_parser_error!(number_oct_with_dec_error, 
+    test_parser_error!(err_number_oct_with_dec_error, 
                  "0129", 
                  "0129\n   ^\nInvalid number");
 
     test_parser!(number_hex_8, "0x8", "8");
     test_parser!(number_hex_20, "0x14", "20");
-    test_parser_error!(number_hex_wrong, 
+    test_parser_error!(err_number_hex_wrong, 
                  "01x23 adw\nasd", 
                  "01x23 adw\n  ^^     \nInvalid number");
 
@@ -123,31 +172,39 @@ mod tests {
     test_parser!(expr_complex_no_spaces, 
                  "0x123/(2+123)+23*010*(num-4)", 
                  "((291 / (2 + 123)) + ((23 * 8) * (num - 4)))");
-    test_parser_error!(expr_incomplete, 
+    test_parser_error!(err_expr_incomplete, 
                  "12+", 
                  "Unexpected end of file");
-    test_parser_error!(expr_incomplete_with_brace, 
+    test_parser_error!(err_expr_incomplete_with_brace, 
                  "12+(", 
                  "Unexpected end of file");
-    test_parser_error!(expr_incomplete_with_brace_and_number, 
+    test_parser_error!(err_expr_incomplete_with_brace_and_number, 
                  "12+(123", 
                  "Unexpected end of file");
-    test_parser_error!(expr_incomplete_with_brace_and_number_and_plus, 
+    test_parser_error!(err_expr_incomplete_with_brace_and_number_and_plus, 
                  "12+(123+", 
                  "Unexpected end of file");
-    test_parser_error!(expr_only_operator,
+    test_parser_error!(err_expr_only_operator,
                  "+", 
                  "+\n^\nInvalid expression, expected ID or Number");
-    test_parser_error!(expr_missing_operator,
+    test_parser_error!(err_expr_missing_operator,
                  "123 321", 
                  "123 321\n    ^^^\nInvalid expression, expected operator or semicolon");
-    test_parser_error!(expr_with_nested_braces,
+    test_parser_error!(err_expr_with_nested_braces,
                  "((((123)))", 
                  "Unexpected end of file");
-    test_parser_error!(expr_just_braces_instead_of_operand,
+    test_parser_error!(err_expr_just_braces_instead_of_operand,
                  "123 + ()", 
                  "123 + ()\n       ^\nInvalid expression, expected ID or Number");
-    test_parser_error!(expr_just_braces,
+    test_parser_error!(err_expr_just_braces,
                  "()", 
                  "()\n ^\nInvalid expression, expected ID or Number");
+
+    test_compute!(compute_simple, "1 + 2", 3);
+    test_compute!(compute_with_braces, "2 * (3 + 4) ", 14);
+    test_compute!(compute_with_variable, "asd = 4; 2 * (3 + asd) ", 14);
+    test_compute!(compute_with_two_variables, "qwe=3; asd = 4; 2 * (qwe + asd) ", 14);
+    test_compute!(compute_strings_multiplication, "qwe='oko'; qwe*3", "okookooko");
+    //test_compute!(compute_goal, "fn qwe(x) x*2; asd = 4; 2 * (qwe(5) + asd) ", 28);
+    //test_compute_error!(err_compute_goal, "123 + 'text'", "123 + 'text'\n    ^       \nIncompatible types");
 }

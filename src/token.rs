@@ -14,6 +14,7 @@ pub enum Token {
     RParen(Location),
     Eof,
     Semi(Location),
+    String(Location, String),
 }
 
 impl Display for Token {
@@ -30,6 +31,7 @@ impl Display for Token {
             Token::RParen(pos) => write!(f, "RParen {}", pos),
             Token::Eof => write!(f, "EOF"),
             Token::Semi(pos) => write!(f, "Semi {}", pos),
+            Token::String(pos, v) => write!(f, "String {} ( value: \"{}\")", pos, v),
         }
     }
 }
@@ -49,6 +51,7 @@ impl Token {
             Token::RParen(pos) => *pos,
             Token::Eof => Location::Eof,
             Token::Semi(pos) => *pos,
+            Token::String(pos, _) => *pos,
         }
     }
 }

@@ -1,9 +1,12 @@
+mod value;
+pub use value::Value;
 use std::fmt::Display;
 use std::slice::Iter;
 
 use crate::loc::Location;
 use crate::token::Token;
 use crate::errors::PError;
+
 
 #[derive(Debug, Copy, Clone)]
 pub enum Op {
@@ -13,11 +16,13 @@ pub enum Op {
     Mul,
     Div,
     Def,
+    Assign,
 }
 
 impl Op {
     fn priority(&self) -> u32 {
         match self {
+            Op::Assign=> 4,
             Op::Add => 3,
             Op::Sub => 3,
             Op::Mul => 2,
@@ -31,8 +36,9 @@ impl Op {
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Op::Assign => write!(f, "="),
             Op::Add => write!(f, "+"),
-            Op::Def => write!(f, "="),
+            Op::Def => write!(f, "def:"),
             Op::Div => write!(f, "/"),
             Op::Mul => write!(f, "*"),
             Op::Sub => write!(f, "-"),
@@ -59,13 +65,13 @@ pub struct Node {
     pub op: Op,
     pub location: Location,
     pub id: Option<String>,
-    pub value: Option<u32>,
+    pub value: Option<Value>,
     pub left: Option<Box<Node>>, 
     pub right: Option<Box<Node>>
 }
 
 impl Node {
-    pub fn new(op: Op, value: Option<u32>, location: Location) -> Self {
+    pub fn new(op: Op, value: Option<Value>, location: Location) -> Self {
         Self {
             op,
             id: None,
@@ -106,8 +112,10 @@ impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Op::Root = self.op {
             write!(f,"{}", OptionalNode(&self.right))?;
-        }else if let Some(x) = self.value {
+        }else if let Some(Value::Number(x)) = self.value {
             write!(f,"{}", x)?;
+        }else if let Some(Value::String(ref x)) = self.value {
+            write!(f,"\"{}\"", x)?;
         }else if let Some(ref n) = self.id {
             write!(f,"{}", n)?;
         }else{
@@ -125,21 +133,26 @@ impl From<Node> for Option<Box<Node>> {
 
 
 enum State {
-    Noun,
+    Expr,
     Operator,
-    End
+    End,
+    Eof
 }
 
 impl State {
     fn expect(&self, tree:  &mut Node, iter: &mut Iter<Token>, level: usize) -> Result<State, PError> {
         let Some(token) = iter.next() else {
-            return Ok(State::End);
+            return Ok(State::Eof);
         };
         match self {
-            Self::Noun => {
+            Self::Expr => {
                 match token {
                     Token::Number(loc, n) => {
-                        tree.add(Node::new(Op::Def, Some(*n), *loc));
+                        tree.add(Node::new(Op::Def, Some((*n).into()), *loc));
+                        Ok(Self::Operator)
+                    },
+                    Token::String(loc, n) => {
+                        tree.add(Node::new(Op::Def, Some(n.into()), *loc));
                         Ok(Self::Operator)
                     },
                     Token::Id(loc, ref n) => {
@@ -147,8 +160,16 @@ impl State {
                         Ok(Self::Operator)
                     },
                     Token::LParen(loc) => {
-                        tree.add(build(iter, level + 1, *loc)?);
-                        Ok(Self::Operator)
+                        let ret = build(iter, level+1, *loc)?;
+                        match ret {
+                            Some(node) => {
+                                tree.add(node);
+                                return Ok(Self::Operator);
+                            },
+                            None => {
+                                return Err(PError::new(token.get_location(), "Unexpected end of file"))
+                            },
+                        }
                     },
                     Token::Eof => {
                         Err(PError::new(token.get_location(), "Unexpected end of file"))
@@ -160,21 +181,25 @@ impl State {
             },
             Self::Operator => {
                 match token {
+                    Token::Eq(loc) => {
+                        tree.add(Node::new(Op::Assign, None, *loc));
+                        Ok(Self::Expr)
+                    },
                     Token::Plus(loc) => {
                         tree.add(Node::new(Op::Add, None, *loc));
-                        Ok(Self::Noun)
+                        Ok(Self::Expr)
                     },
                     Token::Minus(loc) => {
                         tree.add(Node::new(Op::Sub, None, *loc));
-                        Ok(Self::Noun)
+                        Ok(Self::Expr)
                     }
                     Token::Star(loc) => {
                         tree.add(Node::new(Op::Mul, None, *loc));
-                        Ok(Self::Noun)
+                        Ok(Self::Expr)
                     }
                     Token::Slash(loc) => {
                         tree.add(Node::new(Op::Div, None, *loc));
-                        Ok(Self::Noun)
+                        Ok(Self::Expr)
                     }
                     Token::RParen(_) => {
                         Ok(Self::End)
@@ -197,26 +222,42 @@ impl State {
                 }
 
             },
-            Self::End => Ok(Self::End)
+            Self::End => Ok(Self::End),
+            Self::Eof => Ok(Self::Eof)
         }
     }
 }
 
 
 
-pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Node, PError> {
+pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Option<Node>, PError> {
     let mut tree: Node = Node::new(Op::Root, None, loc);
-    let mut state = State::Noun;
+    let mut state = State::Expr;
     loop {
         state = state.expect(&mut tree, iter, level)?;
+        match state {
+            State::End => {
+                return Ok(Some(tree));
+            },
+            State::Eof => {
+                return Ok(None);
+            },
+            _ => {}
+        }
         if let State::End = state {
-            return Ok(tree);
+            return Ok(Some(tree));
         }
     }
 }
-
-pub fn parse(tokens: &mut Vec<Token>) -> Result<Node, PError> {
-    let mut iter = tokens.iter();
-    build(&mut iter, 0, Location::new_point(0,0,0))
+pub fn parse(iter: &mut Iter<Token>) -> Result<Vec<Node>, PError> {
+    let mut arr = Vec::new();
+    
+    loop {
+        let ret = build(iter, 0, Location::new_point(0,0,0));
+        match ret {
+            Ok(Some(v)) => arr.push(v),
+            Ok(None) => return Ok(arr),
+            Err(e) => return Err(e)
+        }
+    }
 }
-

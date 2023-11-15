@@ -27,7 +27,7 @@ impl PError {
     }
     pub fn format_error(&self, text: &str) -> String {
         let Location::Range { pos, line_pos, length, .. } = self.location.to_range() else {
-            return format!("{}", self.message);
+            return self.message.to_string();
         };
         let line = text.chars()
             .skip(pos - line_pos)
