@@ -1,6 +1,6 @@
 mod errors;
 mod token;
-mod tokenizer;
+mod lexer;
 mod parser;
 mod loc;
 mod iter;
@@ -10,7 +10,7 @@ mod interpreter;
 use std::fmt::Display;
 
 use token::{Token, TokenVec};
-use tokenizer::Tokenizer;
+use lexer::Tokenizer;
 use errors::PError;
 
 fn tokenize(text: &str) -> Result<Vec<Token>, PError> {

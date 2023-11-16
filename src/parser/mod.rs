@@ -164,19 +164,13 @@ impl State {
                         match ret {
                             Some(node) => {
                                 tree.add(node);
-                                return Ok(Self::Operator);
+                                Ok(Self::Operator)
                             },
-                            None => {
-                                return Err(PError::new(token.get_location(), "Unexpected end of file"))
-                            },
+                            None => Err(PError::new(token.get_location(), "Unexpected end of file")),
                         }
                     },
-                    Token::Eof => {
-                        Err(PError::new(token.get_location(), "Unexpected end of file"))
-                    }
-                    _ => {
-                        Err(PError::new(token.get_location(), "Invalid expression, expected ID or Number"))
-                    }
+                    Token::Eof => Err(PError::new(token.get_location(), "Unexpected end of file")),
+                    _ => Err(PError::new(token.get_location(), "Invalid expression, expected ID or Number")),
                 }
             },
             Self::Operator => {
