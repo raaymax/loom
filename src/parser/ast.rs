@@ -1,14 +1,9 @@
-mod value;
-mod node;
-mod ast_node;
-mod ast;
-pub use value::Value;
 use std::slice::Iter;
-
 use crate::loc::Location;
 use crate::token::Token;
 use crate::errors::PError;
-pub use node::{Node, Op};
+
+use super::ast_node::{Node, Op};
 
 enum State {
     Expr,
@@ -26,26 +21,21 @@ impl State {
             Self::Expr => {
                 match token {
                     Token::Number(loc, n) => {
-                        tree.add(Node::new(Op::Def, Some((*n).into()), *loc));
+                        tree.add(Node::new_value((*n).into(), *loc));
                         Ok(Self::Operator)
                     },
                     Token::String(loc, n) => {
-                        tree.add(Node::new(Op::Def, Some(n.into()), *loc));
+                        tree.add(Node::new_value(n.into(), *loc));
                         Ok(Self::Operator)
                     },
                     Token::Id(loc, ref n) => {
-                        tree.add(Node::new_var(Op::Def, n, *loc));
+                        tree.add(Node::new_var(n, *loc));
                         Ok(Self::Operator)
                     },
                     Token::LParen(loc) => {
                         let ret = build(iter, level+1, *loc)?;
-                        match ret {
-                            Some(node) => {
-                                tree.add(node);
-                                Ok(Self::Operator)
-                            },
-                            None => Err(PError::new(token.get_location(), "Unexpected end of file")),
-                        }
+                        tree.add(ret);
+                        Ok(Self::Operator)
                     },
                     Token::Eof => Err(PError::new(token.get_location(), "Unexpected end of file")),
                     _ => Err(PError::new(token.get_location(), "Invalid expression, expected ID or Number")),
@@ -54,23 +44,23 @@ impl State {
             Self::Operator => {
                 match token {
                     Token::Eq(loc) => {
-                        tree.add(Node::new(Op::Assign, None, *loc));
+                        tree.add(Node::new_op(Op::Assign, *loc));
                         Ok(Self::Expr)
                     },
                     Token::Plus(loc) => {
-                        tree.add(Node::new(Op::Add, None, *loc));
+                        tree.add(Node::new_op(Op::Add, *loc));
                         Ok(Self::Expr)
                     },
                     Token::Minus(loc) => {
-                        tree.add(Node::new(Op::Sub, None, *loc));
+                        tree.add(Node::new_op(Op::Sub, *loc));
                         Ok(Self::Expr)
                     }
                     Token::Star(loc) => {
-                        tree.add(Node::new(Op::Mul, None, *loc));
+                        tree.add(Node::new_op(Op::Mul, *loc));
                         Ok(Self::Expr)
                     }
                     Token::Slash(loc) => {
-                        tree.add(Node::new(Op::Div, None, *loc));
+                        tree.add(Node::new_op(Op::Div, *loc));
                         Ok(Self::Expr)
                     }
                     Token::RParen(_) => {
@@ -102,34 +92,48 @@ impl State {
 
 
 
-pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Option<Node>, PError> {
-    let mut tree: Node = Node::new(Op::Root, None, loc);
+pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Node, PError> {
+    let mut tree: Node = Node::new_scope(loc);
     let mut state = State::Expr;
     loop {
         state = state.expect(&mut tree, iter, level)?;
         match state {
             State::End => {
-                return Ok(Some(tree));
+                return Ok(tree);
             },
             State::Eof => {
-                return Ok(None);
+                return Ok(tree);
             },
             _ => {}
         }
         if let State::End = state {
-            return Ok(Some(tree));
+            return Ok(tree);
         }
     }
 }
-pub fn parse(iter: &mut Iter<Token>) -> Result<Vec<Node>, PError> {
-    let mut arr = Vec::new();
-    
-    loop {
-        let ret = build(iter, 0, Location::new_point(0,0,0));
-        match ret {
-            Ok(Some(v)) => arr.push(v),
-            Ok(None) => return Ok(arr),
-            Err(e) => return Err(e)
-        }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_single_number() {
+        let tokens = vec![Token::Number(Location::zero(), 1)];
+        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
+        assert_eq!(tree.to_string(), "{1}");
     }
+    #[test]
+    fn test_operator_plus() {
+        let tokens = vec![Token::Number(Location::zero(), 2), Token::Plus(Location::zero()), Token::Number(Location::zero(), 1), Token::Semi(Location::zero())];
+        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
+        assert_eq!(tree.to_string(), "{(2 + 1)}");
+    }
+
+    #[test]
+    fn test_operator_assign() {
+        let tokens = vec![Token::Id(Location::zero(), "variable".to_string()), Token::Eq(Location::zero()), Token::Number(Location::zero(), 1), Token::Semi(Location::zero())];
+        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
+        assert_eq!(tree.to_string(), "{(variable = 1)}");
+    }
+    
 }

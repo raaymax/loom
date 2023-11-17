@@ -28,6 +28,9 @@ impl Display for Location {
 }
 
 impl Location {
+    pub fn zero() -> Self {
+        Self::Point { pos:0, line_pos:0, line:0 } 
+    }
     pub fn new_point(pos: usize, line: usize, line_pos: usize) -> Self {
         Self::Point { pos, line_pos, line } 
     }
