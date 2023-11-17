@@ -146,12 +146,13 @@ impl Node {
 
     pub fn add(&mut self, node: Node) {
         if let Some(ref mut right) = self.last() {
-            let score = node.priority() - right.priority();
-            if score < 0 {
+            if node.priority() < right.priority() {
                 right.add(node);
-            }else if score == 0 {
-                self.children.push(node);
             }else{
+                if node.priority() == 0 {
+                    self.children.push(node);
+                    return;
+                }
                 let mut node = node;
                 if let Some(left) = self.children.pop() {
                     println!("left: {} <- {}", left, node);

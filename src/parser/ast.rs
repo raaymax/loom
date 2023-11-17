@@ -116,24 +116,35 @@ pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Nod
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_single_number() {
-        let tokens = vec![Token::Number(Location::zero(), 1)];
-        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
-        assert_eq!(tree.to_string(), "{1}");
-    }
-    #[test]
-    fn test_operator_plus() {
-        let tokens = vec![Token::Number(Location::zero(), 2), Token::Plus(Location::zero()), Token::Number(Location::zero(), 1), Token::Semi(Location::zero())];
-        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
-        assert_eq!(tree.to_string(), "{(2 + 1)}");
+    #[macro_export]
+    macro_rules! test_ast{
+        ( $name:ident, $i:expr, $o:expr ) => {
+            #[test]
+            fn $name() {
+                let tokens = $i;
+                let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
+                assert_eq!(tree.to_string(), $o);
+            }
+        };
     }
 
-    #[test]
-    fn test_operator_assign() {
-        let tokens = vec![Token::Id(Location::zero(), "variable".to_string()), Token::Eq(Location::zero()), Token::Number(Location::zero(), 1), Token::Semi(Location::zero())];
-        let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
-        assert_eq!(tree.to_string(), "{(variable = 1)}");
+    #[macro_export]
+    macro_rules! test_ast2{
+        ( $name:ident, $o:expr, [ $($token:ident($($arg:expr),*)),+ ] ) => {
+            #[test]
+            fn $name() {
+                let tokens = vec![$(Token::$token(Location::zero(), $($arg),*)),+];
+                let tree = build(&mut tokens.iter(), 0, Location::zero()).unwrap();
+                assert_eq!(tree.to_string(), $o);
+            }
+        };
     }
-    
+
+    test_ast2!(ast_number, "{1}", [Number(1)]);
+    test_ast2!(ast_op_add, "{(1 + 2)}", [Number(1), Plus(), Number(2)]);
+    test_ast2!(ast_op_sub, "{(1 - 2)}", [Number(1), Minus(), Number(2)]);
+    test_ast2!(ast_op_mul, "{(1 * 2)}", [Number(1), Star(), Number(2)]);
+    test_ast2!(ast_op_div, "{(1 / 2)}", [Number(1), Slash(), Number(2)]);
+    test_ast2!(ast_op_assign, "{(id = 2)}", [Id("id".to_string()), Eq(), Number(2)]);
+    test_ast2!(ast_nesting, "{((1 + 2) + 3)}", [Number(1), Plus(), Number(2), Plus(), Number(3)]);
 }
