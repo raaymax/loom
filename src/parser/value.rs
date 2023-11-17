@@ -5,6 +5,7 @@ use std::ops::{Add, Mul, Sub, Div};
 pub enum Value {
     Number(i32),
     String(String),
+    Undefined,
 }
 
 impl From<u32> for Value {

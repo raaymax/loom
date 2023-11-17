@@ -6,26 +6,12 @@ mod loc;
 mod iter;
 mod interpreter;
 
-
-use std::fmt::Display;
-
 use token::{Token, TokenVec};
 use lexer::Tokenizer;
 use errors::PError;
 
 fn tokenize(text: &str) -> Result<Vec<Token>, PError> {
     Tokenizer::new(text).collect()
-}
-
-struct NodeVec<'a>(&'a Vec<parser::Node>);
-impl Display for NodeVec<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f)?;
-        for node in self.0 {
-            writeln!(f, "\t{}", node)?;
-        }
-        Ok(())
-    }
 }
 
 fn main() {
@@ -48,14 +34,14 @@ fn main() {
     println!("\nTOKENS:\t{}", TokenVec(&tokens));
 
     let mut iter = tokens.iter();
-    let nodes = parser::parse(&mut iter).unwrap_or_else(|e| {
+    let node = parser::parse(&mut iter).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
 
-    println!("\nTREEs:\t{}", NodeVec(&nodes));
+    println!("\nTREEs:\t{}", node);
     
-    let value = interpreter::interpret(&nodes).unwrap_or_else(|e| {
+    let value = interpreter::interpret(node).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e);
         std::process::exit(1);
     });
@@ -67,7 +53,7 @@ fn main() {
 mod tests {
     use super::*;
 
-    fn parse(text: &str) -> Result<Vec<parser::Node>, PError> {
+    fn parse(text: &str) -> Result<parser::Node, PError> {
         let tokens = tokenize(text)?;
         let mut iter = tokens.iter();
         parser::parse(&mut iter)
@@ -78,10 +64,10 @@ mod tests {
         ( $name:ident, $i:expr, $o:expr ) => {
             #[test]
             fn $name() {
-                let nodes = parse($i).unwrap_or_else(|e| {
+                let node = parse($i).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
-                assert_eq!(nodes.first().unwrap().to_string(), $o);
+                assert_eq!(node.to_string(), $o);
             }
         };
     }
@@ -103,10 +89,11 @@ mod tests {
             #[test]
             fn $name() {
                 let text = $i;
-                let nodes = parse(text).unwrap_or_else(|e| {
+                let node = parse(text).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
-                let value = interpreter::interpret(&nodes).unwrap_or_else(|e| {
+                println!("{}", node);
+                let value = interpreter::interpret(node).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
                 assert_eq!(value, $o.into());
@@ -120,28 +107,28 @@ mod tests {
             #[test]
             fn $name() {
                 let text = $i;
-                let nodes = parse(text).unwrap_or_else(|e| {
+                let node = parse(text).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
-                let err = interpreter::interpret(&nodes).unwrap_err();
+                let err = interpreter::interpret(node).unwrap_err();
                 assert_eq!(err.format_error(text), $o);
             }
         };
     }
 
 
-    test_parser!(variable_basic, "variable", "variable");
-    test_parser!(variable_camel_case, "camel_case", "camel_case");
-    test_parser!(variable_with_numbers, "var123", "var123");
+    test_parser!(variable_basic, "variable", "{variable}");
+    test_parser!(variable_camel_case, "camel_case", "{camel_case}");
+    test_parser!(variable_with_numbers, "var123", "{var123}");
 
-    test_parser!(number_dec_8, "8", "8");
-    test_parser!(number_dec_20, "20", "20");
+    test_parser!(number_dec_8, "8", "{8}");
+    test_parser!(number_dec_20, "20", "{20}");
     test_parser_error!(number_dec_invalid_characters, 
                  "123asd", 
                  "123asd\n   ^^^\nInvalid number");
 
-    test_parser!(number_oct_8, "010", "8");
-    test_parser!(number_oct_20, "024", "20");
+    test_parser!(number_oct_8, "010", "{8}");
+    test_parser!(number_oct_20, "024", "{20}");
     test_parser_error!(number_oct_with_hex_error, 
                  "012a", 
                  "012a\n   ^\nInvalid number");
@@ -149,29 +136,29 @@ mod tests {
                  "0129", 
                  "0129\n   ^\nInvalid number");
 
-    test_parser!(number_hex_8, "0x8", "8");
-    test_parser!(number_hex_20, "0x14", "20");
+    test_parser!(number_hex_8, "0x8", "{8}");
+    test_parser!(number_hex_20, "0x14", "{20}");
     test_parser_error!(err_number_hex_wrong, 
                  "01x23 adw\nasd", 
                  "01x23 adw\n  ^^     \nInvalid number");
 
     test_parser!(expr_number_in_braces, 
                  "(1)", 
-                 "1");
+                 "{1}");
 
     test_parser!(expr_simple, 
                  "1 + 2", 
-                 "(1 + 2)");
+                 "{(1 + 2)}");
 
     test_parser!(expr_variables, 
                  "num1 + num2", 
-                 "(num1 + num2)");
+                 "{(num1 + num2)}");
     test_parser!(expr_complex, 
                  "0x123 / ( 2 + 123 ) + 23 * 010 * ( num - 4 )", 
-                 "((291 / (2 + 123)) + ((23 * 8) * (num - 4)))");
+                 "{((291 / (2 + 123)) + ((23 * 8) * (num - 4)))}");
     test_parser!(expr_complex_no_spaces, 
                  "0x123/(2+123)+23*010*(num-4)", 
-                 "((291 / (2 + 123)) + ((23 * 8) * (num - 4)))");
+                 "{((291 / (2 + 123)) + ((23 * 8) * (num - 4)))}");
     test_parser_error!(err_expr_incomplete, 
                  "12+", 
                  "Unexpected end of file");

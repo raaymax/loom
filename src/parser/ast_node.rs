@@ -2,9 +2,11 @@ use super::value::Value;
 use std::{fmt::Display, collections::HashMap};
 use crate::loc::Location;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Op {
+    Placeholder,
     Scope,
+    Paren,
     Branch,
     Loop,
     Add,
@@ -19,16 +21,18 @@ pub enum Op {
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
+            Op::Placeholder=> 10,
+            Op::Scope => 7,
+            Op::Branch => 6,
+            Op::Loop => 6,
             Op::Assign=> 5,
             Op::Add => 4,
             Op::Sub => 4,
             Op::Mul => 3,
             Op::Div => 3,
-            Op::Value => 2,
-            Op::Var=> 2,
-            Op::Branch => 1,
-            Op::Loop => 1,
-            Op::Scope => 0,
+            Op::Value => 0,
+            Op::Var=> 0,
+            Op::Paren => 0,
         }
     }
 }
@@ -36,16 +40,18 @@ impl Op {
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Op::Placeholder => write!(f, "??"),
             Op::Assign => write!(f, "="),
             Op::Add => write!(f, "+"),
-            Op::Value => write!(f, ""),
-            Op::Var => write!(f, "var:"),
+            Op::Value => write!(f, "X"),
+            Op::Var => write!(f, "var"),
             Op::Div => write!(f, "/"),
             Op::Mul => write!(f, "*"),
             Op::Sub => write!(f, "-"),
-            Op::Branch => write!(f, ""),
-            Op::Loop => write!(f, ""),
-            Op::Scope => write!(f, ""),
+            Op::Branch => write!(f, "if"),
+            Op::Loop => write!(f, "loop"),
+            Op::Scope => write!(f, "{{}}"),
+            Op::Paren => write!(f, "()"),
         }
     }
 }
@@ -66,15 +72,25 @@ impl Display for OptionalNode<'_> {
 
 #[derive(Debug)]
 pub struct Node {
-    defs: HashMap<String, Node>,
-    op: Op,
-    location: Location,
-    value: Option<Value>,
-    id: Option<String>,
-    children: Vec<Node>,
+    pub defs: HashMap<String, Node>,
+    pub op: Op,
+    pub location: Location,
+    pub value: Option<Value>,
+    pub id: Option<String>,
+    pub children: Vec<Node>,
 }
 
 impl Node {
+    pub fn new_placeholder() -> Self {
+        Self {
+            op: Op::Placeholder,
+            location: Location::zero(),
+            value: None,
+            defs: HashMap::new(),
+            id: None,
+            children: Vec::new(),
+        }
+    }
     pub fn new_op(op: Op, location: Location) -> Self {
         Self {
             op,
@@ -136,33 +152,135 @@ impl Node {
         }
     }
 
+    pub fn new_paren(location: Location) -> Self {
+        Self{
+            op: Op::Paren,
+            id:None,
+            location,
+            value: None,
+            defs: HashMap::new(),
+            children: Vec::new(),
+        }
+    }
+
     pub fn priority(&self) -> i32 {
         self.op.priority() as i32
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        self.op.priority() == 0
     }
 
     pub fn last(&mut self) -> Option<&mut Node> {
         self.children.last_mut()
     }
+    pub fn right_mut(&mut self) -> Option<&mut Node> {
+        self.children.get_mut(1)
+    }
+    pub fn left_mut(&mut self) -> Option<&mut Node> {
+        self.children.get_mut(0)
+    }
+    pub fn right(&self) -> Option<&Node> {
+        self.children.get(1)
+    }
+    pub fn left(&self) -> Option<&Node> {
+        self.children.get(0)
+    }
+
+    pub fn is_complete(&self) -> bool {
+        match self.op {
+            Op::Scope | Op::Paren => {
+                for child in &self.children {
+                    if !child.is_complete() {
+                        return false;
+                    }
+                }
+                true
+            },
+            Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Assign => {
+                let Some(left) = self.left() else {
+                    return false;
+                };
+                let Some(right) = self.right() else {
+                    return false;
+                };
+                left.is_complete() && right.is_complete()
+            },
+            Op::Branch | Op::Loop => true,
+            Op::Placeholder => false,
+            _ => true,
+        }
+    }
+
+    pub fn next(&mut self, node: Node) {
+        if self.op != Op::Scope {
+            return;
+        }
+        self.children.push(node)
+    }
 
     pub fn add(&mut self, node: Node) {
-        if let Some(ref mut right) = self.last() {
-            if node.priority() < right.priority() {
-                right.add(node);
-            }else{
-                if node.priority() == 0 {
+        //println!("self: {} << {}", self, node);
+        match self.op {
+            Op::Scope | Op::Assign | Op::Paren => {
+                if let Some(right) = self.last() {
+                    if right.op == Op::Placeholder {
+                        *right = node;
+                        return;
+                    }
+                    if node.priority() < right.priority() {
+                        //println!("right: {} -> {}", right, node);
+                        if right.is_leaf() {
+                            self.children.push(node);
+                            return;
+                        }
+                        right.add(node);
+                    }else{
+                        //println!("left: {} <- {}", right, node);
+                        let mut node = node;
+                        if node.is_leaf() {
+                            //println!("leaf: {}", right);
+                            self.children.push(node);
+                            return;
+                        }
+                        if let Some(left) = self.children.pop() {
+                            node.add(left);
+                        }
+                        self.children.push(node);
+                    }
+                } else {
                     self.children.push(node);
-                    return;
-                }
-                let mut node = node;
-                if let Some(left) = self.children.pop() {
-                    println!("left: {} <- {}", left, node);
-                    node.add(left);
-                }
-                self.children.push(node);
-            }
-        } else {
-            self.children.push(node);
-        } 
+                } 
+            },
+            Op::Add | Op::Sub | Op::Mul | Op::Div => {
+                if let Some(ref mut right) = self.right_mut() {
+                    if node.priority() < right.priority() {
+                        //println!("right: {} -> {}", right, node);
+                        if right.is_leaf() {
+                            self.children.push(node);
+                            return;
+                        }
+                        right.add(node);
+                    }else{
+                        //println!("left: {} <- {}", right, node);
+                        let mut node = node;
+                        if node.is_leaf() {
+                            //println!("leaf: {}", right);
+                            self.children.push(node);
+                            return;
+                        }
+                        if let Some(left) = self.children.pop() {
+                            node.add(left);
+                        }
+                        self.children.push(node);
+                    }
+                } else {
+                    self.children.push(node);
+                } 
+            },
+            _ => panic!("not implemented"),
+        }
+        //println!("self: {} out", self);
     }
 }
 
@@ -188,8 +306,10 @@ impl Display for Node {
             Op::Var => {write!(f, "{}", self.id.as_ref().unwrap())?;},
             Op::Scope => {
                 write!(f,"{{")?;
-                for node in self.children.iter() {
+                for (idx, node) in self.children.iter().enumerate() {
+                    if idx > 0 { write!(f,";")? };
                     write!(f,"{}", node)?;
+        
                 }
                 write!(f,"}}")?;
             },
@@ -219,6 +339,13 @@ impl Display for Node {
                     writeln!(f,"else {}", else_body)?;
                 }
             },
+            Op::Paren => {
+                if let Some(body) = self.children.get(0) {
+                    write!(f,"{}", body)?;
+                } else {
+                    write!(f,"()")?;
+                }
+            }
             _ => write!(f,"N/A")?, 
         }
         Ok(())

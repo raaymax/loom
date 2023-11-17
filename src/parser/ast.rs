@@ -33,7 +33,7 @@ impl State {
                         Ok(Self::Operator)
                     },
                     Token::LParen(loc) => {
-                        let ret = build(iter, level+1, *loc)?;
+                        let ret = build_paren(iter, level+1, *loc)?;
                         tree.add(ret);
                         Ok(Self::Operator)
                     },
@@ -70,7 +70,8 @@ impl State {
                         if level > 0 {
                             return Err(PError::new(token.get_location(), "Unexpected end of expression"));
                         }
-                        Ok(Self::End)
+                        tree.next(Node::new_placeholder());
+                        Ok(Self::Expr)
                     },
                     Token::Eof => {
                         if level > 0 {
@@ -90,6 +91,26 @@ impl State {
     }
 }
 
+
+pub fn build_paren(iter: &mut Iter<Token>, level: usize, location: Location) -> Result<Node, PError> {
+    let mut tree: Node = Node::new_paren(location);
+    let mut state = State::Expr;
+    loop {
+        state = state.expect(&mut tree, iter, level)?;
+        match state {
+            State::End => {
+                return Ok(tree);
+            },
+            State::Eof => {
+                return Ok(tree);
+            },
+            _ => {}
+        }
+        if let State::End = state {
+            return Ok(tree);
+        }
+    }
+}
 
 
 pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Node, PError> {
@@ -147,4 +168,13 @@ mod tests {
     test_ast2!(ast_op_div, "{(1 / 2)}", [Number(1), Slash(), Number(2)]);
     test_ast2!(ast_op_assign, "{(id = 2)}", [Id("id".to_string()), Eq(), Number(2)]);
     test_ast2!(ast_nesting, "{((1 + 2) + 3)}", [Number(1), Plus(), Number(2), Plus(), Number(3)]);
+    test_ast2!(ast_nesting_mul, "{(1 + (2 * 3))}", [Number(1), Plus(), Number(2), Star(), Number(3)]);
+    test_ast2!(ast_nesting_mul_2x, "{((1 * 2) * 3)}", [Number(1), Star(), Number(2), Star(), Number(3)]);
+    test_ast2!(ast_complex, "{((123 / (2 + 123)) + ((23 * 8) * (32 - 4)))}", [
+        Number(123), Slash(), LParen(), Number(2), Plus(), Number(123), RParen(), Plus(), LParen(),
+        Number(23), Star(), Number(8), RParen(), Star(), LParen(), Number(32), Minus(), Number(4), RParen()
+    ]);
+    test_ast2!(ast_multiple_expressions, "{(a = 2);(a + 5)}", [
+        Id("a".to_string()), Eq(),Number(2), Semi(), Id("a".to_string()), Plus(), Number(5)
+    ]);
 }
