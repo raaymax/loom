@@ -244,88 +244,43 @@ impl Node {
         }
     }
 
-    pub fn add(&mut self, node: Node) -> Result<(), PError> {
+    pub fn add(&mut self, node: Node) {
         //println!("self: {} << {}", self, node);
         match self.op {
             Op::Branch => {
-                /*
-                if let Some(child) = self.last() {
-                    if child.op == Op::Placeholder {
-                        *child = node;
-                        return Ok(());
-                    }
-                    if child.is_complete() && node.group == Group::Noun {
-                        self.children.push(node);
-                        return Ok(());
-                    }
-                    
-                    child.add(node);
-                    return Ok(());
-                }
-                */
                 self.children.push(node);
-                Ok(())
             },
-            Op::Scope => Ok({
+            Op::Scope => {
                 self.children.push(node);
-                /*
-                let Some(right) = self.last() else {
-                    self.children.push(node);
-                    return Ok(());
-                };
-                if right.op == Op::Placeholder {
-                    *right = node;
-                    return Ok(());
-                }
-                if right.is_complete() && node.group == Group::Noun {
-                    return Err(PError::new(node.location, "Invalid expression, expected operator or semicolon"));
-                }
-                if node.priority() < right.priority() {
-                    right.add(node);
-                    return Ok(());
-                }
-                let mut node = node;
-                if node.is_leaf() {
-                    self.children.push(node);
-                    return Ok(());
-                }
-                if let Some(left) = self.children.pop() {
-                    node.add(left);
-                }
-                self.children.push(node);
-                */
-            }),
+            },
             Op::Assign | Op::Paren => {
                 if let Some(right) = self.last() {
                     if right.op == Op::Placeholder {
                         *right = node;
-                        return Ok(());
+                        return;
                     }
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
                         if right.is_leaf() {
                             self.children.push(node);
-                            return Ok(());
+                            return;
                         }
                         right.add(node);
-                        Ok(())
                     }else{
                         //println!("left: {} <- {}", right, node);
                         let mut node = node;
                         if node.is_leaf() {
                             //println!("leaf: {}", right);
                             self.children.push(node);
-                            return Ok(());
+                            return;
                         }
                         if let Some(left) = self.children.pop() {
                             node.add(left);
                         }
                         self.children.push(node);
-                        Ok(())
                     }
                 } else {
                     self.children.push(node);
-                    Ok(())
                 } 
             },
             Op::Add | Op::Sub | Op::Mul | Op::Div => {
@@ -334,27 +289,24 @@ impl Node {
                         //println!("right: {} -> {}", right, node);
                         if right.is_leaf() {
                             self.children.push(node);
-                            return Ok(());
+                            return;
                         }
                         right.add(node);
-                        Ok(())
                     }else{
                         //println!("left: {} <- {}", right, node);
                         let mut node = node;
                         if node.is_leaf() {
                             //println!("leaf: {}", right);
                             self.children.push(node);
-                            return Ok(());
+                            return;
                         }
                         if let Some(left) = self.children.pop() {
                             node.add(left);
                         }
                         self.children.push(node);
-                        Ok(())
                     }
                 } else {
                     self.children.push(node);
-                    Ok(())
                 } 
             },
             _ => panic!("not implemented {:?}", self.op),
