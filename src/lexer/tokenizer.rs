@@ -31,6 +31,13 @@ impl<'a> Tokenizer<'a> {
             },
             x if x.is_alphabetic() => {
                 let (size, text) = id(&mut self.it)?;
+                match text.as_str() {
+                    "if" => return Ok(Token::If(p.set_range(size))),
+                    "else" => return Ok(Token::Else(p.set_range(size))),
+                    "loop" => return Ok(Token::Loop(p.set_range(size))),
+                    "break" => return Ok(Token::Break(p.set_range(size))),
+                    _ => {}
+                }
                 Ok(Token::Id(p.set_range(size), text))
             }
             '+' =>  Ok(Token::Plus(self.get_location(1))),

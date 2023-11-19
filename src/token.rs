@@ -1,10 +1,15 @@
 use std::fmt::Display;
 use crate::loc::Location;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
+    Start,
     Number(Location, u32),
     Id(Location, String),
+    If(Location),
+    Else(Location),
+    Loop(Location),
+    Break(Location),
     Plus(Location),
     Eq(Location),
     Minus(Location),
@@ -23,6 +28,7 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Token::Start => write!(f, "Start"),
             Token::Number(pos, n) => write!(f, "Number {} ( value: {} )", pos, n),
             Token::Id(pos, name) => write!(f, "Id {} ( name: {} )", pos, name),
             Token::Plus(pos) => write!(f, "Plus {}", pos),
@@ -38,6 +44,10 @@ impl Display for Token {
             Token::Colon(pos) => write!(f, "Colon {}", pos),
             Token::LBrace(pos) => write!(f, "LBrace {}", pos),
             Token::RBrace(pos) => write!(f, "RBrace {}", pos),
+            Token::If(pos) => write!(f, "if {}", pos),
+            Token::Else(pos) => write!(f, "else {}", pos),
+            Token::Loop(pos) => write!(f, "loop {}", pos),
+            Token::Break(pos) => write!(f, "break {}", pos),
         }
     }
 }
@@ -46,6 +56,7 @@ impl Display for Token {
 impl Token {
     pub fn get_location(&self) -> Location {
         match self {
+            Token::Start => Location::zero(),
             Token::Number(pos, ..) => *pos,
             Token::Id(pos, ..) => *pos,
             Token::Plus(pos) => *pos,
@@ -61,6 +72,39 @@ impl Token {
             Token::Colon(pos) => *pos,
             Token::LBrace(pos) => *pos,
             Token::RBrace(pos) => *pos,
+            Token::If(pos) => *pos,
+            Token::Else(pos) => *pos,
+            Token::Loop(pos) => *pos,
+            Token::Break(pos) => *pos,
+        }
+    }
+
+    pub fn is_operator(&self) -> bool {
+        match self {
+            Token::Plus(..) => true,
+            Token::Eq(..) => true,
+            Token::Minus(..) => true,
+            Token::Star(..) => true,
+            Token::Slash(..) => true,
+            _ => false,
+        }
+    }
+    pub fn is_block(&self) -> bool {
+        match self {
+            Token::LParen(..) => true,
+            Token::LBrace(..) => true,
+            Token::If(..) => true,
+            Token::Loop(..) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_noun(&self) -> bool {
+        match self {
+            Token::Number(..) => true,
+            Token::Id(..) => true,
+            Token::String(..) => true,
+            _ => false,
         }
     }
 }
@@ -77,5 +121,4 @@ impl Display for TokenVec<'_> {
         write!(f, "{}", s)
     }
 }
-
 

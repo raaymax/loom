@@ -1,0 +1,15 @@
+
+
+
+operator = "+" | "-" | "*" | "/" | "==" | "!=" | "<" | ">" | "<=" | ">="
+noun = number | identifier | paren | string | if
+expr = noun ?-> (operator -> expr) 
+if = "if" -> expr -> expr ;?-> expr
+
+expr ::= SEQUENCE {
+  noun NOUN
+  operator OPERATOR
+  expr EXPR
+}
+
+

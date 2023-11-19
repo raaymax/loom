@@ -1,6 +1,12 @@
 use super::value::Value;
 use std::{fmt::Display, collections::HashMap};
-use crate::loc::Location;
+use crate::{loc::Location, errors::PError};
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Group {
+    Operator,
+    Noun,
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Op {
@@ -22,7 +28,7 @@ impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Placeholder=> 10,
-            Op::Scope => 7,
+            Op::Scope => 0,
             Op::Branch => 6,
             Op::Loop => 6,
             Op::Assign=> 5,
@@ -73,6 +79,7 @@ impl Display for OptionalNode<'_> {
 #[derive(Debug)]
 pub struct Node {
     pub defs: HashMap<String, Node>,
+    pub group: Group,
     pub op: Op,
     pub location: Location,
     pub value: Option<Value>,
@@ -84,6 +91,7 @@ impl Node {
     pub fn new_placeholder() -> Self {
         Self {
             op: Op::Placeholder,
+            group: Group::Noun,
             location: Location::zero(),
             value: None,
             defs: HashMap::new(),
@@ -95,6 +103,7 @@ impl Node {
         Self {
             op,
             location,
+            group: Group::Operator,
             value: None,
             defs: HashMap::new(),
             id: None,
@@ -104,6 +113,7 @@ impl Node {
     pub fn new_value(value: Value, location: Location) -> Self {
         Self {
             op: Op::Value,
+            group: Group::Noun,
             value: Some(value),
             location,
             defs: HashMap::new(),
@@ -114,6 +124,7 @@ impl Node {
     pub fn new_var(id: &str, location: Location) -> Self {
         Self {
             op: Op::Var,
+            group: Group::Noun,
             id: Some(id.to_string()),
             location,
             value: None,
@@ -124,6 +135,7 @@ impl Node {
     pub fn new_scope(location: Location) -> Self {
         Self{
             op: Op::Scope,
+            group: Group::Noun,
             id:None,
             location,
             value: None,
@@ -134,6 +146,7 @@ impl Node {
     pub fn new_loop(location: Location) -> Self {
         Self{
             op: Op::Loop,
+            group: Group::Noun,
             id:None,
             location,
             value: None,
@@ -143,7 +156,8 @@ impl Node {
     }
     pub fn new_branch(location: Location) -> Self {
         Self{
-            op: Op::Loop,
+            op: Op::Branch,
+            group: Group::Noun,
             id:None,
             location,
             value: None,
@@ -155,6 +169,7 @@ impl Node {
     pub fn new_paren(location: Location) -> Self {
         Self{
             op: Op::Paren,
+            group: Group::Noun,
             id:None,
             location,
             value: None,
@@ -206,50 +221,111 @@ impl Node {
                 };
                 left.is_complete() && right.is_complete()
             },
-            Op::Branch | Op::Loop => true,
+            Op::Branch => {
+                let Some(left) = self.left() else {
+                    return false;
+                };
+                let Some(right) = self.right() else {
+                    return false;
+                };
+                left.is_complete() && right.is_complete()
+            },
+            Op::Loop => true,
             Op::Placeholder => false,
             _ => true,
         }
     }
 
     pub fn next(&mut self, node: Node) {
-        if self.op != Op::Scope {
-            return;
+        match self.op {
+            Op::Scope => self.children.push(node),
+            Op::Branch => self.children.push(node),
+            _ => (),
         }
-        self.children.push(node)
     }
 
-    pub fn add(&mut self, node: Node) {
+    pub fn add(&mut self, node: Node) -> Result<(), PError> {
         //println!("self: {} << {}", self, node);
         match self.op {
-            Op::Scope | Op::Assign | Op::Paren => {
+            Op::Branch => {
+                /*
+                if let Some(child) = self.last() {
+                    if child.op == Op::Placeholder {
+                        *child = node;
+                        return Ok(());
+                    }
+                    if child.is_complete() && node.group == Group::Noun {
+                        self.children.push(node);
+                        return Ok(());
+                    }
+                    
+                    child.add(node);
+                    return Ok(());
+                }
+                */
+                self.children.push(node);
+                Ok(())
+            },
+            Op::Scope => Ok({
+                self.children.push(node);
+                /*
+                let Some(right) = self.last() else {
+                    self.children.push(node);
+                    return Ok(());
+                };
+                if right.op == Op::Placeholder {
+                    *right = node;
+                    return Ok(());
+                }
+                if right.is_complete() && node.group == Group::Noun {
+                    return Err(PError::new(node.location, "Invalid expression, expected operator or semicolon"));
+                }
+                if node.priority() < right.priority() {
+                    right.add(node);
+                    return Ok(());
+                }
+                let mut node = node;
+                if node.is_leaf() {
+                    self.children.push(node);
+                    return Ok(());
+                }
+                if let Some(left) = self.children.pop() {
+                    node.add(left);
+                }
+                self.children.push(node);
+                */
+            }),
+            Op::Assign | Op::Paren => {
                 if let Some(right) = self.last() {
                     if right.op == Op::Placeholder {
                         *right = node;
-                        return;
+                        return Ok(());
                     }
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
                         if right.is_leaf() {
                             self.children.push(node);
-                            return;
+                            return Ok(());
                         }
                         right.add(node);
+                        Ok(())
                     }else{
                         //println!("left: {} <- {}", right, node);
                         let mut node = node;
                         if node.is_leaf() {
                             //println!("leaf: {}", right);
                             self.children.push(node);
-                            return;
+                            return Ok(());
                         }
                         if let Some(left) = self.children.pop() {
                             node.add(left);
                         }
                         self.children.push(node);
+                        Ok(())
                     }
                 } else {
                     self.children.push(node);
+                    Ok(())
                 } 
             },
             Op::Add | Op::Sub | Op::Mul | Op::Div => {
@@ -258,27 +334,30 @@ impl Node {
                         //println!("right: {} -> {}", right, node);
                         if right.is_leaf() {
                             self.children.push(node);
-                            return;
+                            return Ok(());
                         }
                         right.add(node);
+                        Ok(())
                     }else{
                         //println!("left: {} <- {}", right, node);
                         let mut node = node;
                         if node.is_leaf() {
                             //println!("leaf: {}", right);
                             self.children.push(node);
-                            return;
+                            return Ok(());
                         }
                         if let Some(left) = self.children.pop() {
                             node.add(left);
                         }
                         self.children.push(node);
+                        Ok(())
                     }
                 } else {
                     self.children.push(node);
+                    Ok(())
                 } 
             },
-            _ => panic!("not implemented"),
+            _ => panic!("not implemented {:?}", self.op),
         }
         //println!("self: {} out", self);
     }
@@ -326,17 +405,19 @@ impl Display for Node {
             },
             Op::Branch => {
                 if let Some(condition) = self.children.get(0) {
-                    writeln!(f,"if {}", condition)?;
+                    write!(f,"if({})", condition)?;
                 } else {
-                    writeln!(f,"if ?")?;
+                    write!(f,"if ?")?;
                 }
 
                 if let Some(if_body) = self.children.get(1) {
-                    writeln!(f,"{}", if_body)?;
+                    write!(f,"{}", if_body)?;
+                }else {
+                    write!(f," ??")?;
                 }
 
                 if let Some(else_body) = self.children.get(2) {
-                    writeln!(f,"else {}", else_body)?;
+                    write!(f," else {}", else_body)?;
                 }
             },
             Op::Paren => {
@@ -345,7 +426,8 @@ impl Display for Node {
                 } else {
                     write!(f,"()")?;
                 }
-            }
+            },
+            Op::Placeholder => write!(f,"??")?,
             _ => write!(f,"N/A")?, 
         }
         Ok(())
