@@ -92,7 +92,7 @@ mod tests {
                 let node = parse(text).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
-                println!("{}", node);
+                //println!("{}", node);
                 let value = interpreter::interpret(node).unwrap_or_else(|e| {
                     panic!("\nError:\n{}\n", e.format_error($i));
                 });
@@ -200,6 +200,8 @@ mod tests {
         test_compute!(with_braces, "2 * (3 + 4) ", 14);
         test_compute!(with_variable, "asd = 4; 2 * (3 + asd) ", 14);
         test_compute!(with_two_variables, "qwe=3; asd = 4; 2 * (qwe + asd) ", 14);
+        test_compute!(conditional_positive, "if(1){5}else{7}", 5);
+        test_compute!(conditional_negative, "if(0){5}else{7}", 7);
         test_compute!(strings_multiplication, "qwe='oko'; qwe*3", "okookooko");
         //test_compute!(goal, "fn qwe(x) x*2; asd = 4; 2 * (qwe(5) + asd) ", 28);
         //test_compute_error!(err_goal, "123 + 'text'", "123 + 'text'\n    ^       \nIncompatible types");

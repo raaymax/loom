@@ -5,7 +5,24 @@ use crate::errors::PError;
 
 pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, PError> {
     match node.op {
-        Op::Scope | Op::Paren | Op:: Branch | Op::Loop => {
+        Op:: Branch=> {
+            let cond = compute(node.children.get(0).unwrap(), dict)?;
+            if let Value::Number(c) = cond {
+                if c != 0 {
+                    return compute(node.children.get(1).unwrap(), dict);
+                } else {
+                    return compute(node.children.get(2).unwrap(), dict);
+                }
+            } else {
+                return Err(PError::new(node.location, "Invalid condition"));
+            }
+            let mut last = Value::Undefined;
+            for child in &node.children {
+                last = compute(child, dict)?;
+            }
+            Ok(last)
+        },
+        Op::Scope | Op::Paren | Op::Loop => {
             let mut last = Value::Undefined;
             for child in &node.children {
                 last = compute(child, dict)?;
