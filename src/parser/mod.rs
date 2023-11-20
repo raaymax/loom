@@ -1,7 +1,12 @@
 mod value;
 mod ast_node;
 mod ast;
+mod block;
+mod expr;
+mod branch;
+
 use std::slice::Iter;
+
 use crate::loc::Location;
 use crate::token::Token;
 use crate::errors::PError;
