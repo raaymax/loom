@@ -169,7 +169,7 @@ mod tests {
                      "{((291 / (2 + 123)) + ((23 * 8) * (num - 4)))}");
         test_parser!(expr_complex_with_conditional, 
                      "0x123 / ( 2 + 123 ) + { asd = 123; if(1) {asd + 2} } * 010 * ( num - 4 )", 
-                     "{((291 / (2 + 123)) + (({(asd = 123);if(1){(asd + 2)}} * 8) * (num - 4)))}");
+                     "{((291 / (2 + 123)) + (({(asd = 123);if(1){(asd + 2)} else ()} * 8) * (num - 4)))}");
         test_parser_error!(err_expr_incomplete, 
                      "12+", 
                      "Unexpected end of file");
