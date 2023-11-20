@@ -1,6 +1,6 @@
-use crate::{errors::PError, iter::LocationIterator};
+use crate::{errors::PError, iter::{LocationIterator, BufferedIterator}};
 
-pub fn string(it: &mut LocationIterator) -> Result<(usize,String), PError> {
+pub fn string(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String), PError> {
     let mut buf: String = "".to_string();
     let mut delimiter = '"';
     let mut size = 0;

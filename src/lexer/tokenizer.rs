@@ -2,25 +2,25 @@ use super::number::number;
 use super::string::string;
 use super::id::id;
 use crate::token::Token;
-use crate::iter::LocationIterator;
+use crate::iter::{LocationIterator, BufferedIterator};
 use crate::loc::Location;
 use crate::errors::PError;
 
 pub struct Tokenizer<'a> {
-    it: LocationIterator<'a>,
+    it: BufferedIterator<LocationIterator<'a>>,
     finished: bool,
 }
 
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
-            it: LocationIterator::new(text),
+            it: BufferedIterator::new(LocationIterator::new(text)),
             finished: false,
         }
     }
 
     pub fn get_next(&mut self) -> Result<Token, PError> {
-        let Some((p, c)) = self.it.clone().next() else {
+        let Some((p, c)) = self.it.peek() else {
             self.finished = true;
             return Ok(Token::Eof)
         };

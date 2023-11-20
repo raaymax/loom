@@ -1,6 +1,6 @@
-use crate::{errors::PError, iter::LocationIterator};
+use crate::{errors::PError, iter::{LocationIterator, BufferedIterator}};
 
-pub fn id(it: &mut LocationIterator) -> Result<(usize,String), PError> {
+pub fn id(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String), PError> {
     let mut buf: String = "".to_string();
     let mut size = 0;
     let mut iter = it.clone().enumerate();

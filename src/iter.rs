@@ -37,3 +37,30 @@ impl Iterator for LocationIterator<'_> {
     }
 }
 
+#[derive(Clone)]
+pub struct BufferedIterator<T: Iterator + Clone> {
+    it: T,
+    buffer: Option<T::Item>,
+}
+
+impl<T: Iterator + Clone> BufferedIterator<T> where T::Item: Copy{
+    pub fn new(it: T) -> Self {
+        let mut local = it.clone();
+        let buffer = local.next();
+        Self { it: local, buffer }
+    }
+
+    pub fn peek(&self) -> Option<T::Item> {
+        self.buffer
+    }
+
+}
+impl<T: Iterator + Clone> Iterator for BufferedIterator<T> {
+    type Item = T::Item;
+
+    fn next(&mut self) -> Option<T::Item> {
+        let ret = self.buffer.take();
+        self.buffer = self.it.next();
+        ret
+    }
+}
