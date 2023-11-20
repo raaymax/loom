@@ -5,6 +5,7 @@ mod parser;
 mod loc;
 mod iter;
 mod interpreter;
+mod lsp_server;
 
 use token::{Token, TokenVec};
 use lexer::Tokenizer;
@@ -15,6 +16,12 @@ fn tokenize(text: &str) -> Result<Vec<Token>, PError> {
 }
 
 fn main() {
+    if let Some(path) = std::env::args().nth(1) {
+        if path == "lsp" {
+            lsp_server::run();
+            return;
+        }
+    }
     let text = if let Some(path) = std::env::args().nth(1) {
         std::fs::read_to_string(path).unwrap_or_else(|e| {
             eprintln!("Error: \n{}", e);

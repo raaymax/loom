@@ -2,3 +2,12 @@
 multiline comment
 */
 5 + 4
+
+vim.tbl_deep_extend('keep', lsp, {
+	lsp_name = {
+    cmd = { '/Users/raay/Workspace/Codecat/Challenges/LangVM/target/debug/lang_vm --ls' },
+    filetypes = { 'lv' },
+    name = { 'langvm' },
+ }
+})
+lspconfig.langvm.setup {}
