@@ -3,23 +3,23 @@ use crate::{errors::PError, iter::{LocationIterator, BufferedIterator}};
 pub fn id(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String), PError> {
     let mut buf: String = "".to_string();
     let mut size = 0;
-    let mut iter = it.clone().enumerate();
-    while let Some((pos,(_loc, c))) = iter.next() {
+    let mut pos = 0;
+    while let Some((_loc, c)) = it.peek() {
         size +=1;
         match c {
             c if c.is_alphabetic() => {
                 buf.push(c);
+                it.next();
             }
             c if (c.is_alphanumeric() || c == '_') && pos > 0 => {
                 buf.push(c);
+                it.next();
             }
             _ => {
-                for _ in 0..pos {
-                    it.next();
-                }
                 return Ok((size, buf));
             }
         }
+        pos += 1;
     }
     it.last();
     Ok((size,buf))
