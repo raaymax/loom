@@ -43,7 +43,10 @@ impl Branch {
                 tree.add(else_body);
                 Ok((tree, ret3))
             },
-            _ => Ok((tree, Some(next_token))),
+            _ => {
+                tree.add(Node::new_paren(next_token.get_location()));
+                Ok((tree, Some(next_token)))
+            },
         }
     }
 }
