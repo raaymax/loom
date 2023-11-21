@@ -96,7 +96,7 @@ impl Server {
         Server {
             transport, 
             handlers: HashMap::new(),
-            log: File::options().append(true).create(true).open("foo.log").unwrap(),
+            log: File::create("foo.log").unwrap(),
         }
     }
     pub fn add_method(mut self, method: &str, handler: Handler ) -> Self {

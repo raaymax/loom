@@ -1,0 +1,96 @@
+==================
+Simple operation
+==================
+
+result + 0x123;
+
+---
+
+(source_file
+  (statement
+    (binary_expression
+      (identifier)
+      (number))))
+
+==================
+Simple operation with comment
+==================
+
+result + 0x123;
+
+---
+
+(source_file
+  (statement
+    (binary_expression
+      (identifier)
+      (number))))
+
+
+==================
+Simple number 
+==================
+
+0x123;
+
+---
+
+(source_file
+  (statement
+    (number)))
+
+==================
+Simple assignment 
+==================
+
+result = 0x123;
+
+---
+
+(source_file
+  (statement
+    (assignment
+      (identifier)
+      (number))))
+
+==================
+Operator chaining
+==================
+
+1 + 2 + 3;
+
+---
+
+(source_file
+  (statement
+    (binary_expression
+      (binary_expression
+          (number)
+          (number))
+      (number))))
+
+==================
+Complex expression
+==================
+
+rEsult = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
+
+---
+
+(source_file
+  (statement
+    (assignment
+      (identifier)
+      (binary_expression
+        (binary_expression
+          (number)
+          (binary_expression
+            (number)
+            (number)))
+        (binary_expression
+          (binary_expression
+            (number)
+            (identifier))
+          (binary_expression
+            (number)
+            (number)))))))

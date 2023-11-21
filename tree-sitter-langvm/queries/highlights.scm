@@ -1,0 +1,11 @@
+"if" @keyword
+"else" @keyword
+"+" @operator
+"-" @operator
+"*" @operator
+"/" @operator
+(assignment) @assignment
+(identifier) @variable
+(number) @number
+(string) @string
+(comment) @comment
