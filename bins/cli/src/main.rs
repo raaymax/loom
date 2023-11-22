@@ -16,12 +16,12 @@ fn main() {
         std::process::exit(1);
     };
 
-    println!("\nINPUT:\t{}", text);
+    println!("INPUT:\t{}\n", text);
     let tokens = tokenize(&text).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
-    println!("\nTOKENS:\t{}", TokenVec(&tokens));
+    println!("TOKENS:\t{}\n", TokenVec(&tokens));
 
     let mut iter = tokens.iter();
     let node = parser::parse(&mut iter).unwrap_or_else(|e| {
@@ -29,13 +29,15 @@ fn main() {
         std::process::exit(1);
     });
 
-    println!("\nTREEs:\t{}", node);
+    println!("TREEs:\t{}\n", node);
     
+
+    println!("EXECUTING:");
     let value = interpreter::interpret(node).unwrap_or_else(|e| {
         eprintln!("Error: \n{}", e);
         std::process::exit(1);
     });
 
-    println!("\nOUTPUT:\t{}", value);
+    println!("\nOUTPUT:\t{}\n", value);
 }
 

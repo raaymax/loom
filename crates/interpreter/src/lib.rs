@@ -1,16 +1,46 @@
+mod vtype;
 use std::collections::HashMap;
 
 use parser::{Node, Op, Value};
 use lexer::PError;
+use vtype::VType;
 
-pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, PError> {
+
+struct Globals;
+
+impl Globals {
+    pub fn is_builtin(name: &str) -> bool {
+        match name {
+            "print" => true,
+            _ => false,
+        }
+    }
+    pub fn builtin(name: &str) -> Option<VType> {
+        match name {
+            "print" => Some(VType::BuiltinFunction("print".to_string())),
+            _ => None,
+        }
+        
+    }
+}
+
+pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, PError> {
     match node.op {
         Op::Call => {
-            panic!("Not implemented yet");
+            let func = compute(node.children.get(1).unwrap(), dict)?;
+            match func {
+                VType::BuiltinFunction(name) if name == "print" => {
+                    println!("{}", compute(node.children.get(0).unwrap(), dict)?);
+                },
+                _ => {
+                    return Err(PError::new(node.location, "Not a function"));
+                }
+            }
+            Ok(VType::Undefined)
         },
         Op:: Branch=> {
             let cond = compute(node.children.get(0).unwrap(), dict)?;
-            if let Value::Number(c) = cond {
+            if let VType::Number(c) = cond {
                 if c != 0 {
                     return compute(node.children.get(1).unwrap(), dict);
                 } else {
@@ -19,14 +49,14 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, 
             } else {
                 return Err(PError::new(node.location, "Invalid condition"));
             }
-            let mut last = Value::Undefined;
+            let mut last = VType::Undefined;
             for child in &node.children {
                 last = compute(child, dict)?;
             }
             Ok(last)
         },
         Op::Scope | Op::Paren | Op::Loop => {
-            let mut last = Value::Undefined;
+            let mut last = VType::Undefined;
             for child in &node.children {
                 last = compute(child, dict)?;
             }
@@ -56,14 +86,19 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, 
             let Some(val) = node.value.as_ref() else {
                 return Err(PError::new(node.location, "No value for definition"));
             };
-            Ok(val.clone())
+            Ok(val.clone().into())
 
         },
         Op::Var => {
-            let Some(_) = node.id else {
+            let Some(ref id) = node.id else {
                 return Err(PError::new(node.location, "No id or value for definition"));
             };
-            let Some(val) = dict.get(node.id.as_ref().unwrap()) else {
+
+            if let Some(v) = Globals::builtin(id) {
+                return Ok(v);
+            }
+
+            let Some(val) = dict.get(id) else {
                 return Err(PError::new(node.location, "Variable not defined"));
             };
             Ok(val.clone())
@@ -81,7 +116,7 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, 
     
 }
 
-pub fn interpret(node: Node) -> Result<Value, PError> {
+pub fn interpret(node: Node) -> Result<VType, PError> {
     let mut dict = HashMap::new();
     compute(&node, &mut dict)
 }

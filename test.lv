@@ -9,13 +9,20 @@ QWE = "other string with 123 + 321";
 zxc = 'string with spaces'; //asddaw
 rEsult = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
 
-if(0) {
-  oko + 5 + " super " + // some comment
-  test + " RESULT: " + rEsult
+
+if(1) {
+  print(
+    oko + 5 + " super " + // some comment
+    test + " RESULT: " + rEsult
+  );
 } else { 
   "false" // false value
-}
+};
 
-if () {
+
+
+if (1) {
   "asd" + 123
-}
+};
+
+"test"

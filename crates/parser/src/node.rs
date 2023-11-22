@@ -200,14 +200,7 @@ impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.op {
             Op::Call=> {
-                write!(f,"fn {}(", OptionalNode(self.children.get(0)))?;
-                for (i, child) in self.children.iter().skip(1).enumerate() {
-                    if i > 0 {
-                        write!(f,",")?;
-                    }
-                   write!(f,"{}", OptionalNode(Some(child)))?;
-                }
-                write!(f,")")?;
+                write!(f,"fn {}{}", OptionalNode(self.children.get(1)), OptionalNode(self.children.get(0)))?;
             },
             Op::Add => {
                 write!(f,"({} + {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
@@ -264,11 +257,14 @@ impl Display for Node {
                 }
             },
             Op::Paren => {
-                if let Some(body) = self.children.get(0) {
-                    write!(f,"{}", body)?;
-                } else {
-                    write!(f,"()")?;
+                if self.children.len() != 1 { write!(f,"(")? };
+                for (i, child) in self.children.iter().enumerate() {
+                    if i > 0 {
+                        write!(f,",")?;
+                    }
+                   write!(f,"{}", OptionalNode(Some(child)))?;
                 }
+                if self.children.len() != 1 { write!(f,")")? };
             },
             _ => write!(f,"N/A")?, 
         }
