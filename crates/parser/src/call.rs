@@ -1,5 +1,5 @@
 use std::slice::Iter;
-use lexer::{Location,Token, PError};
+use lexer::{Token, PError};
 use super::Op;
 use super::expr::Expression;
 use super::ast_node::Node;

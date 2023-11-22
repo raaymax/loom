@@ -1,6 +1,5 @@
 mod value;
-mod ast_node;
-mod ast;
+mod node;
 mod block;
 mod expr;
 mod branch;
@@ -10,9 +9,8 @@ use std::slice::Iter;
 
 use lexer::{Location,Token, PError};
 
-pub use self::ast::build;
 pub use value::Value;
-pub use self::ast_node::{Node, Op};
+pub use self::node::{Node, Op};
 
 
 pub use block::Block;
@@ -20,9 +18,18 @@ pub use expr::Expression;
 pub use branch::Branch;
 pub use call::Call;
 
-pub fn parse(iter: &mut Iter<Token>) -> Result<Node, PError> {
-    build(iter, 0, Location::new_point(0,0,0))
+
+pub fn parse(iter: &mut Iter<Token> ) -> Result<Node, PError> {
+    let (node, ret) = Block::consume(&Token::Start, iter, 0)?;
+    if let Some(token) = ret {
+        if let Token::Eof = token {
+            return Ok(node);
+        }
+        return Err(PError::new(token.get_location(), format!("Unexpected token: {}", token).as_str()));
+    }
+    Ok(node)
 }
+
 
 #[cfg(test)]
 mod tests {
