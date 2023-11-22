@@ -1,10 +1,6 @@
 use std::slice::Iter;
 use lexer::{Location,Token, PError};
-
-use super::ast_node::{Node, Op};
-use super::block::Block;
-use super::branch::Branch;
-use super::call::Call;
+use super::{Node, Op, Block, Branch, Call};
 
 enum ExpressionState {
     Start,

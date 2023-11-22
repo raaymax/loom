@@ -1,6 +1,6 @@
 use super::value::Value;
 use std::{fmt::Display, collections::HashMap};
-use crate::Location;
+use lexer::Location;
 
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

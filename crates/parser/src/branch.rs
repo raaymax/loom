@@ -1,6 +1,6 @@
 use std::slice::Iter;
 use lexer::{Location,Token, PError};
-use super::{ast_node::Node, expr::Expression, Op};
+use super::{Node, Expression, Op};
 
 
 pub struct Branch;
