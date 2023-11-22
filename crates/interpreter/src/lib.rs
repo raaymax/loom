@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
-use crate::parser::{Node, Op, Value};
-use crate::errors::PError;
+use parser::{Node, Op, Value};
+use lexer::PError;
 
 pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, PError> {
     match node.op {
+        Op::Call => {
+            panic!("Not implemented yet");
+        },
         Op:: Branch=> {
             let cond = compute(node.children.get(0).unwrap(), dict)?;
             if let Value::Number(c) = cond {
@@ -73,7 +76,6 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, Value>) -> Result<Value, 
             dict.insert(left.clone(), right.clone());
             Ok(right)
         }
-        Op::Placeholder => panic!("Placeholder node in AST"),
 
     }
     

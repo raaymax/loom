@@ -1,11 +1,10 @@
 use std::slice::Iter;
-use crate::loc::Location;
-use crate::token::Token;
-use crate::errors::PError;
+use lexer::{Location,Token, PError};
 
 use super::ast_node::{Node, Op};
 use super::block::Block;
 use super::branch::Branch;
+use super::call::Call;
 
 enum ExpressionState {
     Start,
@@ -18,17 +17,17 @@ pub struct Expression;
 impl Expression {
     fn node_from(token: &Token) -> Node{
         match token {
-            Token::Number(loc, n) => Node::new_value((*n).into(), *loc),
-            Token::String(loc, n) => Node::new_value(n.into(), *loc),
-            Token::Id(loc, id) => Node::new_var(id, *loc),
-            Token::Plus(loc) => Node::new_op(Op::Add, *loc),
-            Token::Minus(loc) => Node::new_op(Op::Sub, *loc),
-            Token::Star(loc) => Node::new_op(Op::Mul, *loc),
-            Token::Slash(loc) => Node::new_op(Op::Div, *loc),
-            Token::Eq(loc) => Node::new_op(Op::Assign, *loc),
-            Token::LBrace(loc) => Node::new_scope(*loc),
-            Token::LParen(loc) => Node::new_paren(*loc),
-            Token::If(loc) => Node::new_branch(*loc),
+            Token::Number(loc, n) => Node::new(Op::Value, *loc).set_value((*n).into()),
+            Token::String(loc, n) => Node::new(Op::Value, *loc).set_value(n.into()),
+            Token::Id(loc, id) => Node::new(Op::Var, *loc).set_id(id.clone()),
+            Token::Plus(loc) => Node::new(Op::Add, *loc),
+            Token::Minus(loc) => Node::new(Op::Sub, *loc),
+            Token::Star(loc) => Node::new(Op::Mul, *loc),
+            Token::Slash(loc) => Node::new(Op::Div, *loc),
+            Token::Eq(loc) => Node::new(Op::Assign, *loc),
+            Token::LBrace(loc) => Node::new(Op::Scope, *loc),
+            Token::LParen(loc) => Node::new(Op::Paren, *loc),
+            Token::If(loc) => Node::new(Op::Branch, *loc),
             _ => {
                 panic!("Unexpected token to build expression: {}", token);
             }
@@ -37,7 +36,7 @@ impl Expression {
 
 
     pub fn consume(tok:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
-        let mut tree = Node::new_paren(tok.get_location());
+        let mut tree = Node::new(Op::Paren, tok.get_location());
         let mut state = ExpressionState::Start;
         loop {
             let Some(token) = iter.next() else {
@@ -100,6 +99,14 @@ impl Expression {
                         let node = Expression::node_from(token);
                         tree.add(node);
                         state = ExpressionState::Noun;
+                    } else if let Token::LParen(..) = token {
+                        let (block, tok) = Call::consume(token, iter, level + 1)?;
+                        if let Some(Token::RParen(..)) = tok {
+                            tree.add(block);
+                            state = ExpressionState::Op;
+                        } else {
+                            return Err(PError::new(Location::Eof, format!("Unexpected end of file, parentheses not closed {}", token.get_location()).as_str()));
+                        }
                     }else {
                         return Ok((tree,Some(token.clone())));
                     }

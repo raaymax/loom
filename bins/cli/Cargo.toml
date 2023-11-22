@@ -1,0 +1,15 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cli"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lexer = { path = "../../crates/lexer" }
+parser = { path = "../../crates/parser" }
+interpreter = { path = "../../crates/interpreter" }

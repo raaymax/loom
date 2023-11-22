@@ -61,6 +61,7 @@ impl<'a> Tokenizer<'a> {
             '}' => Ok(Token::RBrace(self.get_location(1))),
             ';' => Ok(Token::Semi(self.get_location(1))),
             ':' => Ok(Token::Colon(self.get_location(1))),
+            ',' => Ok(Token::Comma(self.get_location(1))),
             '\'' | '"' => {
                 let (size, num) = string(&mut self.it)?;
                 Ok(Token::String(p.set_range(size), num))

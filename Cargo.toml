@@ -1,14 +1,23 @@
 [package]
-name = "lang_vm"
+name = "langvm"
 version = "0.1.0"
 edition = "2021"
 
 
 [workspace]
 members = [
-  "apps/lsp_server",
+  "crates/lexer",
+  "crates/parser",
+  "crates/interpreter",
+  "bins/lsp",
+  "bins/cli",
   "tree-sitter-langvm",
 ]
 
+
+[dependencies]
+lexer = { path = "./crates/lexer" }
+parser = { path = "./crates/parser" }
+interpreter = { path = "./crates/interpreter" }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

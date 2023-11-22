@@ -23,6 +23,7 @@ pub enum Token {
     Semi(Location),
     String(Location, String),
     Colon(Location),
+    Comma(Location),
 }
 
 impl Display for Token {
@@ -48,6 +49,8 @@ impl Display for Token {
             Token::Else(pos) => write!(f, "else {}", pos),
             Token::Loop(pos) => write!(f, "loop {}", pos),
             Token::Break(pos) => write!(f, "break {}", pos),
+            Token::Colon(pos) => write!(f, "Colon {}", pos),
+            Token::Comma(pos) => write!(f, "Comma {}", pos),
         }
     }
 }
@@ -76,6 +79,9 @@ impl Token {
             Token::Else(pos) => *pos,
             Token::Loop(pos) => *pos,
             Token::Break(pos) => *pos,
+            Token::Colon(pos) => *pos,
+            Token::Comma(pos) => *pos,
+
         }
     }
 

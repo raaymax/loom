@@ -1,14 +1,14 @@
 use std::slice::Iter;
-use crate::token::Token;
-use crate::errors::PError;
+use lexer::{Location,Token, PError};
+use super::Op;
 use super::expr::Expression;
 use super::ast_node::Node;
 
-pub struct Block;
+pub struct Call;
 
-impl Block {
+impl Call{
     pub fn consume(token:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
-        let mut tree = Node::new_scope(token.get_location());
+        let mut tree = Node::new(Op::Call, token.get_location());
         loop {
             let (node, tok) = Expression::consume(token, iter, level + 1)?;
             tree.add(node);
@@ -17,10 +17,10 @@ impl Block {
                 return Ok((tree,None));
             };
             match t{
-                Token::RBrace(..) | Token::Eof => {
+                Token::RParen(..) | Token::Eof => {
                     return Ok((tree, Some(t)));
                 },
-                Token::Semi(..) => {
+                Token::Comma(..) => {
                     continue;
                 },
                 _ => Err(PError::new(t.get_location(), format!("Unexpected token, missed semicolon?").as_str()))?,

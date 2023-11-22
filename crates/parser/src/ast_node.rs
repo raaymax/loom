@@ -1,16 +1,10 @@
 use super::value::Value;
 use std::{fmt::Display, collections::HashMap};
-use crate::{loc::Location, errors::PError};
+use crate::Location;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Group {
-    Operator,
-    Noun,
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Op {
-    Placeholder,
     Scope,
     Paren,
     Branch,
@@ -22,12 +16,12 @@ pub enum Op {
     Value,
     Var,
     Assign,
+    Call,
 }
 
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
-            Op::Placeholder=> 10,
             Op::Scope => 0,
             Op::Branch => 6,
             Op::Loop => 6,
@@ -36,6 +30,7 @@ impl Op {
             Op::Sub => 4,
             Op::Mul => 3,
             Op::Div => 3,
+            Op::Call => 1,
             Op::Value => 0,
             Op::Var=> 0,
             Op::Paren => 0,
@@ -46,7 +41,6 @@ impl Op {
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Op::Placeholder => write!(f, "??"),
             Op::Assign => write!(f, "="),
             Op::Add => write!(f, "+"),
             Op::Value => write!(f, "X"),
@@ -58,6 +52,7 @@ impl Display for Op {
             Op::Loop => write!(f, "loop"),
             Op::Scope => write!(f, "{{}}"),
             Op::Paren => write!(f, "()"),
+            Op::Call => write!(f, "()"),
         }
     }
 }
@@ -79,7 +74,6 @@ impl Display for OptionalNode<'_> {
 #[derive(Debug)]
 pub struct Node {
     pub defs: HashMap<String, Node>,
-    pub group: Group,
     pub op: Op,
     pub location: Location,
     pub value: Option<Value>,
@@ -88,94 +82,30 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new_placeholder() -> Self {
-        Self {
-            op: Op::Placeholder,
-            group: Group::Noun,
-            location: Location::zero(),
-            value: None,
-            defs: HashMap::new(),
-            id: None,
-            children: Vec::new(),
-        }
-    }
-    pub fn new_op(op: Op, location: Location) -> Self {
+    pub fn new(op: Op, location: Location) -> Self {
         Self {
             op,
             location,
-            group: Group::Operator,
             value: None,
             defs: HashMap::new(),
             id: None,
-            children: Vec::new(),
-        }
-    }
-    pub fn new_value(value: Value, location: Location) -> Self {
-        Self {
-            op: Op::Value,
-            group: Group::Noun,
-            value: Some(value),
-            location,
-            defs: HashMap::new(),
-            id: None,
-            children: Vec::new(),
-        }
-    }
-    pub fn new_var(id: &str, location: Location) -> Self {
-        Self {
-            op: Op::Var,
-            group: Group::Noun,
-            id: Some(id.to_string()),
-            location,
-            value: None,
-            defs: HashMap::new(),
-            children: Vec::new(),
-        }
-    }
-    pub fn new_scope(location: Location) -> Self {
-        Self{
-            op: Op::Scope,
-            group: Group::Noun,
-            id:None,
-            location,
-            value: None,
-            defs: HashMap::new(),
-            children: Vec::new(),
-        }
-    }
-    pub fn new_loop(location: Location) -> Self {
-        Self{
-            op: Op::Loop,
-            group: Group::Noun,
-            id:None,
-            location,
-            value: None,
-            defs: HashMap::new(),
-            children: Vec::new(),
-        }
-    }
-    pub fn new_branch(location: Location) -> Self {
-        Self{
-            op: Op::Branch,
-            group: Group::Noun,
-            id:None,
-            location,
-            value: None,
-            defs: HashMap::new(),
             children: Vec::new(),
         }
     }
 
-    pub fn new_paren(location: Location) -> Self {
-        Self{
-            op: Op::Paren,
-            group: Group::Noun,
-            id:None,
-            location,
-            value: None,
-            defs: HashMap::new(),
-            children: Vec::new(),
+    pub fn set_value(mut self, value: Value) -> Self {
+        if Op::Value != self.op {
+            panic!("Cannot set value on non-value node");
         }
+        self.value = Some(value);
+        self
+    }
+    pub fn set_id(mut self, id: String) -> Self {
+        if Op::Var != self.op {
+            panic!("Cannot set id on non-var node");
+        }
+        self.id = Some(id);
+        self
     }
 
     pub fn priority(&self) -> i32 {
@@ -202,44 +132,9 @@ impl Node {
         self.children.get(0)
     }
 
-    pub fn is_complete(&self) -> bool {
+    pub fn push_back(&mut self, node: Node) {
         match self.op {
-            Op::Scope | Op::Paren => {
-                for child in &self.children {
-                    if !child.is_complete() {
-                        return false;
-                    }
-                }
-                true
-            },
-            Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Assign => {
-                let Some(left) = self.left() else {
-                    return false;
-                };
-                let Some(right) = self.right() else {
-                    return false;
-                };
-                left.is_complete() && right.is_complete()
-            },
-            Op::Branch => {
-                let Some(left) = self.left() else {
-                    return false;
-                };
-                let Some(right) = self.right() else {
-                    return false;
-                };
-                left.is_complete() && right.is_complete()
-            },
-            Op::Loop => true,
-            Op::Placeholder => false,
-            _ => true,
-        }
-    }
-
-    pub fn next(&mut self, node: Node) {
-        match self.op {
-            Op::Scope => self.children.push(node),
-            Op::Branch => self.children.push(node),
+            Op::Call=> self.children.insert(0, node),
             _ => (),
         }
     }
@@ -247,18 +142,11 @@ impl Node {
     pub fn add(&mut self, node: Node) {
         //println!("self: {} << {}", self, node);
         match self.op {
-            Op::Branch => {
-                self.children.push(node);
-            },
-            Op::Scope => {
+            Op::Scope | Op::Branch | Op::Call => {
                 self.children.push(node);
             },
             Op::Assign | Op::Paren => {
                 if let Some(right) = self.last() {
-                    if right.op == Op::Placeholder {
-                        *right = node;
-                        return;
-                    }
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
                         if right.is_leaf() {
@@ -318,6 +206,16 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.op {
+            Op::Call=> {
+                write!(f,"fn {}(", OptionalNode(self.children.get(0)))?;
+                for (i, child) in self.children.iter().skip(1).enumerate() {
+                    if i > 0 {
+                        write!(f,",")?;
+                    }
+                   write!(f,"{}", OptionalNode(Some(child)))?;
+                }
+                write!(f,")")?;
+            },
             Op::Add => {
                 write!(f,"({} + {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
@@ -379,7 +277,6 @@ impl Display for Node {
                     write!(f,"()")?;
                 }
             },
-            Op::Placeholder => write!(f,"??")?,
             _ => write!(f,"N/A")?, 
         }
         Ok(())
@@ -396,14 +293,14 @@ impl From<Node> for Option<Box<Node>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::loc::Location;
+    use lexer::Location;
 
     #[test]
     fn test_ast() {
-        let mut root = Node::new_op(Op::Scope, Location::zero());
-        let mut node = Node::new_op(Op::Add, Location::zero());
-        node.add(Node::new_value(Value::Number(1), Location::zero()));
-        node.add(Node::new_value(Value::Number(2), Location::zero()));
+        let mut root = Node::new(Op::Scope, Location::zero());
+        let mut node = Node::new(Op::Add, Location::zero());
+        node.add(Node::new(Op::Value, Location::zero()).set_value(1.into()));
+        node.add(Node::new(Op::Value, Location::zero()).set_value(2.into()));
         root.add(node);
         assert_eq!(format!("{}", root), "{(1 + 2)}");
     }

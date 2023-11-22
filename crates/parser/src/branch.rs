@@ -1,8 +1,6 @@
 use std::slice::Iter;
-use crate::loc::Location;
-use crate::token::Token;
-use crate::errors::PError;
-use super::{ast_node::Node, expr::Expression};
+use lexer::{Location,Token, PError};
+use super::{ast_node::Node, expr::Expression, Op};
 
 
 pub struct Branch;
@@ -19,7 +17,7 @@ impl Branch {
         }
     }
     pub fn consume(token: &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
-        let mut tree = Node::new_branch(token.get_location());
+        let mut tree = Node::new(Op::Branch, token.get_location());
         let Some(token) = iter.next() else {
             return Err(PError::new(Location::Eof, "Unexpected end of file"));
         };
@@ -44,7 +42,7 @@ impl Branch {
                 Ok((tree, ret3))
             },
             _ => {
-                tree.add(Node::new_paren(next_token.get_location()));
+                tree.add(Node::new(Op::Paren, next_token.get_location()));
                 Ok((tree, Some(next_token)))
             },
         }

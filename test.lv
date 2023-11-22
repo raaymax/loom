@@ -6,10 +6,16 @@ oko = "t"*5;
   */
 test = "dupa";
 QWE = "other string with 123 + 321";
-zxc = 'string with spaces';
+zxc = 'string with spaces'; //asddaw
 rEsult = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
 
 if(0) {
   oko + 5 + " super " + // some comment
   test + " RESULT: " + rEsult
-} else { "false" }
+} else { 
+  "false" // false value
+}
+
+if () {
+  "asd" + 123
+}

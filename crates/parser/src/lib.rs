@@ -1,24 +1,32 @@
+mod value;
+mod ast_node;
+mod ast;
+mod block;
+mod expr;
+mod branch;
+mod call;
+
 use std::slice::Iter;
-use crate::loc::Location;
-use crate::token::Token;
-use crate::errors::PError;
 
-use super::{ast_node::Node, block::Block};
+use lexer::{Location,Token, PError};
 
-pub fn build(iter: &mut Iter<Token>, level: usize, loc: Location ) -> Result<Node, PError> {
-    let (node, ret) = Block::consume(&Token::Start, iter, level)?;
-    if let Some(token) = ret {
-        if let Token::Eof = token {
-            return Ok(node);
-        }
-        return Err(PError::new(token.get_location(), format!("Unexpected token: {}", token).as_str()));
-    }
-    Ok(node)
+pub use self::ast::build;
+pub use value::Value;
+pub use self::ast_node::{Node, Op};
+
+
+pub use block::Block;
+pub use expr::Expression;
+pub use branch::Branch;
+pub use call::Call;
+
+pub fn parse(iter: &mut Iter<Token>) -> Result<Node, PError> {
+    build(iter, 0, Location::new_point(0,0,0))
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::{expr::Expression, branch::Branch};
 
     #[macro_export]
     macro_rules! test_ast_expr{
