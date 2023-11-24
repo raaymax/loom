@@ -32,7 +32,9 @@ impl<'a> Tokenizer<'a> {
             x if x.is_alphabetic() => {
                 let (size, text) = id(&mut self.it)?;
                 match text.as_str() {
+                    "while" => return Ok(Token::While(p.set_range(size))),
                     "if" => return Ok(Token::If(p.set_range(size))),
+                    "fn" => return Ok(Token::Fn(p.set_range(size))),
                     "else" => return Ok(Token::Else(p.set_range(size))),
                     "loop" => return Ok(Token::Loop(p.set_range(size))),
                     "break" => return Ok(Token::Break(p.set_range(size))),
@@ -42,8 +44,20 @@ impl<'a> Tokenizer<'a> {
             }
             '+' =>  Ok(Token::Plus(self.get_location(1))),
             '-' =>  Ok(Token::Minus(self.get_location(1))),
-            '=' => Ok(Token::Eq(self.get_location(1))),
+            '=' => {
+                if self.accept("==") {
+                    return Ok(Token::Eq(p.set_range(2)));
+                }
+                Ok(Token::Assign(self.get_location(1)))
+            },
             '*' => Ok(Token::Star(self.get_location(1))),
+            '!' => {
+                if self.accept("!=") {
+                    return Ok(Token::Neq(p.set_range(2)));
+                }
+                Ok(Token::Not(self.get_location(1)))
+            },
+            '%' => Ok(Token::Mod(self.get_location(1))),
             '/' => {
                 if self.accept("//") {
                     self.skip_until("\n");

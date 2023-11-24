@@ -5,7 +5,6 @@ pub fn id(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String),
     let mut size = 0;
     let mut pos = 0;
     while let Some((_loc, c)) = it.peek() {
-        size +=1;
         match c {
             c if c.is_alphabetic() => {
                 buf.push(c);
@@ -16,7 +15,7 @@ pub fn id(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String),
                 it.next();
             }
             _ => {
-                return Ok((size, buf));
+                return Ok((pos, buf));
             }
         }
         pos += 1;

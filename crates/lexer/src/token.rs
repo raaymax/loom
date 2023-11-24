@@ -11,7 +11,9 @@ pub enum Token {
     Loop(Location),
     Break(Location),
     Plus(Location),
+    Assign(Location),
     Eq(Location),
+    Neq(Location),
     Minus(Location),
     Star(Location),
     Slash(Location),
@@ -24,6 +26,10 @@ pub enum Token {
     String(Location, String),
     Colon(Location),
     Comma(Location),
+    Mod(Location),
+    Not(Location),
+    While(Location),
+    Fn(Location),
 }
 
 impl Display for Token {
@@ -51,6 +57,12 @@ impl Display for Token {
             Token::Break(pos) => write!(f, "break {}", pos),
             Token::Colon(pos) => write!(f, "Colon {}", pos),
             Token::Comma(pos) => write!(f, "Comma {}", pos),
+            Token::Assign(pos) => write!(f, "Assign {}", pos),
+            Token::Neq(pos) => write!(f, "Neq {}", pos),
+            Token::Mod(pos) => write!(f, "Mod {}", pos),
+            Token::Not(pos) => write!(f, "Not {}", pos),
+            Token::While(pos) => write!(f, "While {}", pos),
+            Token::Fn(pos) => write!(f, "Fn {}", pos),
         }
     }
 }
@@ -81,7 +93,12 @@ impl Token {
             Token::Break(pos) => *pos,
             Token::Colon(pos) => *pos,
             Token::Comma(pos) => *pos,
-
+            Token::Neq(pos) => *pos,
+            Token::Assign(pos) => *pos,
+            Token::Mod(pos) => *pos,
+            Token::Not(pos) => *pos,
+            Token::While(pos) => *pos,
+            Token::Fn(pos) => *pos,
         }
     }
 
@@ -92,6 +109,15 @@ impl Token {
             Token::Minus(..) => true,
             Token::Star(..) => true,
             Token::Slash(..) => true,
+            Token::Neq(..) => true,
+            Token::Assign(..) => true,
+            Token::Mod(..) => true,
+            _ => false,
+        }
+    }
+    pub fn is_modifier(&self) -> bool {
+        match self {
+            Token::Not(..) => true,
             _ => false,
         }
     }
@@ -100,7 +126,9 @@ impl Token {
             Token::LParen(..) => true,
             Token::LBrace(..) => true,
             Token::If(..) => true,
+            Token::While(..) => true,
             Token::Loop(..) => true,
+            Token::Fn(..) => true,
             _ => false,
         }
     }

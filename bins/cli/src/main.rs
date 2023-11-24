@@ -34,7 +34,7 @@ fn main() {
 
     println!("EXECUTING:");
     let value = interpreter::interpret(node).unwrap_or_else(|e| {
-        eprintln!("Error: \n{}", e);
+        eprintln!("Error: \n{}", e.format_error(&text));
         std::process::exit(1);
     });
 

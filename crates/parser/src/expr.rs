@@ -1,6 +1,6 @@
 use std::slice::Iter;
 use lexer::{Location,Token, PError};
-use super::{Node, Op, Block, Branch, Call};
+use super::{Node, Op, Block, Branch, Call, Loop, Func};
 
 enum ExpressionState {
     Start,
@@ -20,7 +20,11 @@ impl Expression {
             Token::Minus(loc) => Node::new(Op::Sub, *loc),
             Token::Star(loc) => Node::new(Op::Mul, *loc),
             Token::Slash(loc) => Node::new(Op::Div, *loc),
-            Token::Eq(loc) => Node::new(Op::Assign, *loc),
+            Token::Mod(loc) => Node::new(Op::Mod, *loc),
+            Token::Not(loc) => Node::new(Op::Not, *loc),
+            Token::Neq(loc) => Node::new(Op::Neq, *loc),
+            Token::Eq(loc) => Node::new(Op::Eq, *loc),
+            Token::Assign(loc) => Node::new(Op::Assign, *loc),
             Token::LBrace(loc) => Node::new(Op::Scope, *loc),
             Token::LParen(loc) => Node::new(Op::Paren, *loc),
             Token::If(loc) => Node::new(Op::Branch, *loc),
@@ -72,8 +76,18 @@ impl Expression {
                                 tree.add(block);
                                 return Ok((tree, tok));
                             }
+                            Token::While(..) => {
+                                let (block, tok) = Loop::consume(token, iter, level + 1)?;
+                                tree.add(block);
+                                return Ok((tree, tok));
+                            }
+                            Token::Fn(..) => {
+                                let (block, tok) = Func::consume(token, iter, level + 1)?;
+                                tree.add(block);
+                                return Ok((tree, tok));
+                            }
                             _ => {
-                                panic!("Unexpected token");
+                                return Err(PError::new(token.get_location(), format!("Unexpected token {}", token).as_str()));
                             }
                         }
                     } else {

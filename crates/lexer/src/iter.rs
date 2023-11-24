@@ -15,7 +15,7 @@ impl<'a> LocationIterator<'a> {
             it: text.chars().enumerate(),
             last_line_pos: 0,
             finished: false,
-            line: 0,
+            line: 1,
         }
     }
 }
@@ -30,7 +30,7 @@ impl Iterator for LocationIterator<'_> {
         let (pos, c) = self.it.next()?;
         let line_pos = pos - self.last_line_pos;
         if c == '\n' {
-            self.last_line_pos = pos;
+            self.last_line_pos = pos+1;
             self.line += 1;
         }
         Some((Location::new_point(pos, self.line, line_pos), c))

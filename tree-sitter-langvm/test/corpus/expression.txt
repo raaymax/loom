@@ -70,6 +70,23 @@ Operator chaining
       (number))))
 
 ==================
+Function call
+==================
+
+print(1,2,'test');
+
+---
+
+(source_file
+  (statement
+    (call
+      (identifier)
+      (arguments
+        (number)
+        (number)
+        (string)))))
+
+==================
 Complex expression
 ==================
 
@@ -94,3 +111,70 @@ rEsult = 0x123 / ( 2 + 123 ) + 23 * asd * ( 2 - 4 );
           (binary_expression
             (number)
             (number)))))))
+
+==================
+While loop
+==================
+
+while ( asd != 5 ) { asd = asd + 1; };
+
+---
+
+(source_file
+  (statement
+    (while
+      (binary_expression
+        (identifier)
+        (number))
+      (block
+        (statement
+          (assignment
+            (identifier)
+            (binary_expression
+              (identifier)
+              (number))))))))
+
+==================
+Function definition
+==================
+
+fn test(asd, qwe) { asd + qwe };
+
+---
+
+(source_file
+  (statement
+    (function
+      (identifier)
+      (arguments
+        (identifier)
+        (identifier))
+      (block
+        (statement
+          (binary_expression
+            (identifier)
+            (identifier)))))))
+
+
+==================
+If definition
+==================
+
+if( a == 5 ) { 7 } else { 9 };
+
+---
+
+(source_file
+  (statement
+    (choice
+      (binary_expression
+        (identifier)
+        (number))
+      (block
+        (statement
+          (number)))
+      (block
+        (statement
+          (number))))))
+
+

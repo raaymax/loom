@@ -20,9 +20,22 @@ if(1) {
 };
 
 
+print(1,2,3,4,5,"dupa");
 
-if (1) {
-  "asd" + 123
+if (1) { "asd" + 123 };
+
+"test";
+
+fn gdc(a, b) {
+  while(b!=0) {
+    t = b;
+    b = a % b;
+    a = t;
+  };
+  a
 };
 
-"test"
+x = 21;
+y = 49;
+print("GCD("+x+","+y+") = " + gdc(x,y));
+"oko"

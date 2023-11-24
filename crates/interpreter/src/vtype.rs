@@ -1,11 +1,19 @@
 use std::fmt::Display;
 use std::ops::{Add, Mul, Sub, Div};
 
-use parser::Value;
+use parser::{Value, Node};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Builtin {
+    Print,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VType {
-    BuiltinFunction(String),
+    Func(Vec<String>, Node),
+    Builtin(Builtin),
+    Bool(bool),
+    Args(Vec<VType>),
     Number(i32),
     String(String),
     Undefined,
@@ -41,7 +49,7 @@ impl Display for VType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             VType::Number(n) => write!(f, "{}", n),
-            VType::String(s) => write!(f, "'{}'", s),
+            VType::String(s) => write!(f, "{}", s),
             VType::Undefined => write!(f, "undefined"),
             _ => panic!("Type not yet implemented"),
         }
@@ -102,3 +110,35 @@ impl Div for VType {
         }
     }
 }
+
+impl  VType {
+    pub fn modulo(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Number(n1 % n2),
+            _ => panic!("Cannot mod non-numbers"),
+        }
+    }
+    pub fn equal(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 == n2),
+            (VType::Bool(n1), VType::Bool(n2)) => VType::Bool(n1 == n2),
+            _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+    pub fn not_equal(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 != n2),
+            (VType::Bool(n1), VType::Bool(n2)) => VType::Bool(n1 != n2),
+            _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+
+    pub fn not(&self) -> VType {
+        match self {
+            VType::Number(n1) => VType::Bool(*n1 > 0),
+            VType::Bool(n1) => VType::Bool(!n1),
+            _ => panic!("Cannot not non-bools"),
+        }
+    }
+}
+

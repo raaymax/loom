@@ -103,6 +103,14 @@ mod expressions {
                  "func(1,2,3,'asd')",
                  "{fn func(1,2,3,'asd')}");
 
+    test_parser!(expr_while_loop,
+                 "while(1==1) { 1 + 2 }",
+                 "{while ((1 == 1)) {(1 + 2)}}");
+
+    test_parser!(expr_while_loop_complex,
+                 "a=0; while(a == 2) a = a + 1; a",
+                 "{(a = 0);while ((a == 2)) (a = (a + 1));a}");
+
     /*
     test_parser_error!(err_expr_just_braces_instead_of_operand,
                  "123 + ()", 

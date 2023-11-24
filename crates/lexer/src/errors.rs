@@ -26,12 +26,15 @@ impl PError {
         }
     }
     pub fn format_error(&self, text: &str) -> String {
-        let Location::Range { pos, line_pos, length, .. } = self.location.to_range() else {
+        let Location::Range { pos, line_pos, length, line: l } = self.location.to_range() else {
             return self.message.to_string();
         };
-        let line = text.chars()
+        let err_pos = "";//format!("[ pos: {}, line: {}, line_pos: {}, length: {} ]", pos, l, line_pos, length);
+        let mut line = text.chars()
             .skip(pos - line_pos)
-            .take_while(|c| *c != '\n').collect::<String>();
+            .take_while(|c| *c != '\n')
+            .collect::<String>();
+        //line.push(' ');
         let mut mask = line.clone();
         for l in 0..line.len() {
             let ch = {

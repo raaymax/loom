@@ -7,6 +7,11 @@ use lexer::Location;
 pub enum Op {
     Scope,
     Paren,
+    Args,
+    Eq,
+    Neq,
+    Mod,
+    Not,
     Branch,
     Loop,
     Add,
@@ -17,20 +22,29 @@ pub enum Op {
     Var,
     Assign,
     Call,
+    While,
+    Func,
 }
 
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Scope => 0,
+            Op::Func=> 10,
             Op::Branch => 6,
             Op::Loop => 6,
+            Op::While => 6,
             Op::Assign=> 5,
+            Op::Neq=> 5,
+            Op::Eq=> 5,
             Op::Add => 4,
             Op::Sub => 4,
             Op::Mul => 3,
             Op::Div => 3,
+            Op::Mod => 2,
             Op::Call => 1,
+            Op::Args => 1,
+            Op::Not=> 1,
             Op::Value => 0,
             Op::Var=> 0,
             Op::Paren => 0,
@@ -52,7 +66,14 @@ impl Display for Op {
             Op::Loop => write!(f, "loop"),
             Op::Scope => write!(f, "{{}}"),
             Op::Paren => write!(f, "()"),
-            Op::Call => write!(f, "()"),
+            Op::Call => write!(f, "fn"),
+            Op::Args => write!(f, "..."),
+            Op::Eq => write!(f, "=="),
+            Op::Neq => write!(f, "!="),
+            Op::Not => write!(f, "!"),
+            Op::Mod => write!(f, "%"),
+            Op::While => write!(f, "while"),
+            Op::Func => write!(f, "Fn"),
         }
     }
 }
@@ -71,7 +92,7 @@ impl Display for OptionalNode<'_> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
     pub defs: HashMap<String, Node>,
     pub op: Op,
@@ -135,7 +156,10 @@ impl Node {
     pub fn add(&mut self, node: Node) {
         //println!("self: {} << {}", self, node);
         match self.op {
-            Op::Scope | Op::Branch | Op::Call => {
+            Op::Call => {
+                self.children.insert(0, node);
+            }
+            Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::Func => {
                 self.children.push(node);
             },
             Op::Assign | Op::Paren => {
@@ -164,7 +188,7 @@ impl Node {
                     self.children.push(node);
                 } 
             },
-            Op::Add | Op::Sub | Op::Mul | Op::Div => {
+            Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Eq | Op::Neq | Op::Mod => {
                 if let Some(ref mut right) = self.right_mut() {
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
@@ -199,8 +223,23 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.op {
+            Op::Func=> {
+                write!(f,"fn {}({}) {}", OptionalNode(self.children.get(0)),OptionalNode(self.children.get(1)), OptionalNode(self.children.get(2)))?;
+            },
+            Op::While => {
+                write!(f,"while ({}) {}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
             Op::Call=> {
-                write!(f,"fn {}{}", OptionalNode(self.children.get(1)), OptionalNode(self.children.get(0)))?;
+                write!(f,"fn {}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Eq => {
+                write!(f,"({} == {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Neq => {
+                write!(f,"({} != {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Mod => {
+                write!(f,"({} % {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Add => {
                 write!(f,"({} + {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
@@ -256,7 +295,7 @@ impl Display for Node {
                     write!(f," else {}", else_body)?;
                 }
             },
-            Op::Paren => {
+            Op::Paren | Op::Args => {
                 if self.children.len() != 1 { write!(f,"(")? };
                 for (i, child) in self.children.iter().enumerate() {
                     if i > 0 {

@@ -46,5 +46,6 @@ test_compute!(with_two_variables, "qwe=3; asd = 4; 2 * (qwe + asd) ", 14);
 test_compute!(conditional_positive, "if(1){5}else{7}", 5);
 test_compute!(conditional_negative, "if(0){5}else{7}", 7);
 test_compute!(strings_multiplication, "qwe='oko'; qwe*3", "okookooko");
+test_compute!(while_loop, "a=0; while(a!=2) a = a + 1; a", 2);
 //test_compute!(goal, "fn qwe(x) x*2; asd = 4; 2 * (qwe(5) + asd) ", 28);
 //test_compute_error!(err_goal, "123 + 'text'", "123 + 'text'\n    ^       \nIncompatible types");

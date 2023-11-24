@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::fmt::Display;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Location {
     Range{
         pos: usize,
@@ -28,8 +28,15 @@ impl Display for Location {
 }
 
 impl Location {
+    pub fn pos(&self) -> usize {
+        match self {
+            Self::Range { pos, .. } => *pos,
+            Self::Point { pos, .. } => *pos,
+            Self::Eof => usize::MAX,
+        }
+    }
     pub fn zero() -> Self {
-        Self::Point { pos:0, line_pos:0, line:0 } 
+        Self::Point { pos:0, line_pos:0, line:1 } 
     }
     pub fn new_point(pos: usize, line: usize, line_pos: usize) -> Self {
         Self::Point { pos, line_pos, line } 
