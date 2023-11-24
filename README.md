@@ -115,4 +115,7 @@ cargo run -p cli <source_file>
 ## Code highlights
 Tree-sitter parser and highlighting included
 
-## License MIT
+## License
+MIT License
+
+Copyright (c) 2023 CodeCat
