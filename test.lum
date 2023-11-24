@@ -1,0 +1,13 @@
+fn gdc(a, b) {
+  while(b!=0) {
+    t = b;
+    b = a % b;
+    a = t;
+  };
+  a
+};
+
+x = 21;
+y = 49;
+print("GCD("+x+","+y+") = " + gdc(x,y));
+0

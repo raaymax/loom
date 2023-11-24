@@ -1,5 +1,5 @@
 module.exports = grammar({
-  name: 'langvm',
+  name: 'loom',
 
   extras: $ => [
     $.comment,
@@ -68,7 +68,7 @@ module.exports = grammar({
     ),
 
     call: $ => prec(1, seq(
-      prec(3, $.name),
+      prec(3, $.identifier),
       $.arguments
     )),
 

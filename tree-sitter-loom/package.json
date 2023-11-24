@@ -1,5 +1,5 @@
 {
-  "name": "tree-sitter-langvm",
+  "name": "tree-sitter-loom",
   "version": "1.0.0",
   "description": "",
   "main": "bindings/node",
@@ -16,9 +16,9 @@
   },
   "tree-sitter": [
     {
-      "scope": "source.lv",
+      "scope": "source.lum",
       "file-types": [
-        "lv"
+        "lum"
       ],
       "highlights": [
         "queries/highlights.scm"

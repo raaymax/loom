@@ -254,15 +254,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
-name = "langvm"
-version = "0.1.0"
-dependencies = [
- "interpreter",
- "lexer",
- "parser",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,6 +284,15 @@ name = "log"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
+
+[[package]]
+name = "loom"
+version = "0.1.0"
+dependencies = [
+ "interpreter",
+ "lexer",
+ "parser",
+]
 
 [[package]]
 name = "lsp"
@@ -856,7 +856,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-sitter-langvm"
+name = "tree-sitter-loom"
 version = "0.0.1"
 dependencies = [
  "cc",

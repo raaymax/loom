@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "tree_sitter_langvm_binding",
+      "target_name": "tree_sitter_loom_binding",
       "include_dirs": [
         "<!(node -e \"require('nan')\")",
         "src"

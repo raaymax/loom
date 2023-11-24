@@ -145,10 +145,10 @@ fn test(asd, qwe) { asd + qwe };
 (source_file
   (statement
     (function
-      (identifier)
-      (arguments
-        (identifier)
-        (identifier))
+      (name)
+      (params
+        (param)
+        (param))
       (block
         (statement
           (binary_expression

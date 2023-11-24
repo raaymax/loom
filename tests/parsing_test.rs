@@ -101,7 +101,7 @@ mod expressions {
 
     test_parser!(expr_simple_call,
                  "func(1,2,3,'asd')",
-                 "{fn func(1,2,3,'asd')}");
+                 "{func(1,2,3,'asd')}");
 
     test_parser!(expr_while_loop,
                  "while(1==1) { 1 + 2 }",

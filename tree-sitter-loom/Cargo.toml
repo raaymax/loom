@@ -1,10 +1,10 @@
 [package]
-name = "tree-sitter-langvm"
-description = "langvm grammar for the tree-sitter parsing library"
+name = "tree-sitter-loom"
+description = "loom grammar for the tree-sitter parsing library"
 version = "0.0.1"
-keywords = ["incremental", "parsing", "langvm"]
+keywords = ["incremental", "parsing", "loom"]
 categories = ["parsing", "text-editors"]
-repository = "https://github.com/tree-sitter/tree-sitter-langvm"
+repository = "https://github.com/tree-sitter/tree-sitter-loom"
 edition = "2018"
 license = "MIT"
 

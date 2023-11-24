@@ -1,5 +1,5 @@
 {
-  "name": "langvm",
+  "name": "loom",
   "rules": {
     "source_file": {
       "type": "REPEAT",
@@ -351,7 +351,7 @@
             "value": 3,
             "content": {
               "type": "SYMBOL",
-              "name": "name"
+              "name": "identifier"
             }
           },
           {

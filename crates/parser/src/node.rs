@@ -230,7 +230,7 @@ impl Display for Node {
                 write!(f,"while ({}) {}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Call=> {
-                write!(f,"fn {}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+                write!(f,"{}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Eq => {
                 write!(f,"({} == {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
