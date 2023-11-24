@@ -1,4 +1,10 @@
 # Loom
+
+[![Tests](https://github.com/raaymax/loom/actions/workflows/rust.yml/badge.svg)](https://github.com/raaymax/loom/actions/workflows/rust.yml)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 Programming language just for fun, will kill LUA some day.
 
 Input:
