@@ -98,7 +98,7 @@ TREEs:  {
   };
   (x = 21);
   (y = 49);
-  fn print((((('GCD(' + x) + ',') + y) + ') = ') + fn gdc(x,y));
+  print((((('GCD(' + x) + ',') + y) + ') = ') + gdc(x,y));
   0
 }
 
