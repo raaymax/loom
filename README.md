@@ -86,7 +86,21 @@ TOKENS:
         EOF
 
 
-TREEs:  {fn gdc((a,b)) {while ((b != 0)) {(t = b);(b = (a % b));(a = t);()};a};(x = 21);(y = 49);fn print((((('GCD(' + x) + ',') + y) + ') = ') + fn gdc(x,y));0}
+TREEs:  {
+  fn gdc((a,b)) {
+    while ((b != 0)) {
+      (t = b);
+      (b = (a % b));
+      (a = t);
+      ()
+    };
+    a
+  };
+  (x = 21);
+  (y = 49);
+  fn print((((('GCD(' + x) + ',') + y) + ') = ') + fn gdc(x,y));
+  0
+}
 
 EXECUTING:
 GCD(21,49) = 7
