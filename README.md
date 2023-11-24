@@ -124,4 +124,4 @@ Tree-sitter parser and highlighting included
 ## License
 MIT License
 
-Copyright (c) 2023 CodeCat
+Copyright (c) 2023 Mateusz Russak
