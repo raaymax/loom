@@ -7,6 +7,9 @@
 
 Programming language just for fun, will kill LUA some day.
 
+Currently development of this language is algorithm driven. I'm trying to implement various algorithms in my language and then I'm adding missing parts to make them work :D 
+Below you can find Shor's algorithm for finding prime factors of an integer.
+
 Input:
 ```loom
 fn gdc(a, b) {
