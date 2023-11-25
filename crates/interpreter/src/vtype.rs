@@ -11,6 +11,7 @@ pub enum Builtin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VType {
     Func(Vec<String>, Node),
+    Ref(String),
     Builtin(Builtin),
     Bool(bool),
     Args(Vec<VType>),

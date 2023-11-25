@@ -6,8 +6,27 @@ fn gdc(a, b) {
   };
   a
 };
-
+asVar = fn gdc2(a, b) {
+  while(b!=0) {
+    t = b;
+    b = a % b;
+    a = t;
+  };
+  a
+};
+/*
+lambda = |a, b| {
+  while(b!=0) {
+    t = b;
+    b = a % b;
+    a = t;
+  };
+  a
+};
+*/
 x = 21;
 y = 49;
-print("GCD("+x+","+y+") = " + gdc(x,y));
+print("gdc("+x+","+y+") = " + gdc(x,y));
+print("asVar("+x+","+y+") = " + asVar(x,y));
+// print("lambda("+x+","+y+") = " + lambda(x,y));
 0

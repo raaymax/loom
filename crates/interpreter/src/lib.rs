@@ -70,7 +70,7 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
             let argNames = extractNames(args)?;
             let func = VType::Func(argNames, body.clone());
             dict.insert(name.id.as_ref().unwrap().clone(), func);
-            Ok(VType::Undefined)
+            Ok(VType::Ref(name.id.as_ref().unwrap().clone()))
         },
         Op::While => {
             let mut last = VType::Undefined;
@@ -95,6 +95,25 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
                     Functions::call(name, Args(args)) 
+                },
+                VType::Ref(name) => {
+                    let args = compute(node.children.get(1).unwrap(), dict)?;
+                    let VType::Args(args) = args else {
+                        return Err(PError::new(node.location, "Invalid arguments"));
+                    };
+                    let func = dict.get(&name).unwrap();
+                    match func {
+                        VType::Func(argNames, body) => {
+                            let mut newDict = dict.clone();
+                            for (idx, arg) in argNames.iter().enumerate() {
+                                newDict.insert(arg.clone(), args.get(idx).unwrap().clone());
+                            }
+                            compute(&body, &mut newDict)
+                        },
+                        _ => {
+                            return Err(PError::new(node.location, "Not a function"));
+                        }
+                    }
                 },
                 VType::Func(argNames, body) => {
                     let args = compute(node.children.get(1).unwrap(), dict)?;

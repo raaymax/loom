@@ -13,3 +13,5 @@ path = "src/main.rs"
 lexer = { path = "../../crates/lexer" }
 parser = { path = "../../crates/parser" }
 interpreter = { path = "../../crates/interpreter" }
+colored = "2.0.4"
+clap = { version = "4.4.8", features = ["derive"] }
