@@ -30,8 +30,12 @@ pub enum Token {
     Not(Location),
     While(Location),
     Fn(Location),
+    Lt(Location),
+    Leq(Location),
+    Gt(Location),
+    Geq(Location),
+    Return(Location),
 }
-
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -63,10 +67,14 @@ impl Display for Token {
             Token::Not(pos) => write!(f, "Not {}", pos),
             Token::While(pos) => write!(f, "While {}", pos),
             Token::Fn(pos) => write!(f, "Fn {}", pos),
+            Token::Lt(pos) => write!(f, "Lt {}", pos),
+            Token::Leq(pos) => write!(f, "Leq {}", pos),
+            Token::Gt(pos) => write!(f, "Gt {}", pos),
+            Token::Geq(pos) => write!(f, "Geq {}", pos),
+            Token::Return(pos) => write!(f, "Return {}", pos),
         }
     }
 }
-
 
 impl Token {
     pub fn get_location(&self) -> Location {
@@ -99,6 +107,11 @@ impl Token {
             Token::Not(pos) => *pos,
             Token::While(pos) => *pos,
             Token::Fn(pos) => *pos,
+            Token::Lt(pos) => *pos,
+            Token::Leq(pos) => *pos,
+            Token::Gt(pos) => *pos,
+            Token::Geq(pos) => *pos,
+            Token::Return(pos) => *pos,
         }
     }
 
@@ -112,6 +125,10 @@ impl Token {
             Token::Neq(..) => true,
             Token::Assign(..) => true,
             Token::Mod(..) => true,
+            Token::Lt(..) => true,
+            Token::Leq(..) => true,
+            Token::Gt(..) => true,
+            Token::Geq(..) => true,
             _ => false,
         }
     }
@@ -129,6 +146,7 @@ impl Token {
             Token::While(..) => true,
             Token::Loop(..) => true,
             Token::Fn(..) => true,
+            Token::Return(..) => true,
             _ => false,
         }
     }

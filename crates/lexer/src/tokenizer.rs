@@ -38,10 +38,23 @@ impl<'a> Tokenizer<'a> {
                     "else" => return Ok(Token::Else(p.set_range(size))),
                     "loop" => return Ok(Token::Loop(p.set_range(size))),
                     "break" => return Ok(Token::Break(p.set_range(size))),
+                    "return" => return Ok(Token::Return(p.set_range(size))),
                     _ => {}
                 }
                 Ok(Token::Id(p.set_range(size), text))
             }
+            '<' => {
+                if self.accept("<=") {
+                    return Ok(Token::Leq(p.set_range(2)));
+                }
+                Ok(Token::Lt(self.get_location(1)))
+            },
+            '>' => {
+                if self.accept(">=") {
+                    return Ok(Token::Geq(p.set_range(2)));
+                }
+                Ok(Token::Gt(self.get_location(1)))
+            },
             '+' =>  Ok(Token::Plus(self.get_location(1))),
             '-' =>  Ok(Token::Minus(self.get_location(1))),
             '=' => {
