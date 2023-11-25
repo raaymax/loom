@@ -30,7 +30,6 @@ impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Scope => 0,
-            Op::Func=> 10,
             Op::Branch => 6,
             Op::Loop => 6,
             Op::While => 6,
@@ -45,6 +44,7 @@ impl Op {
             Op::Call => 1,
             Op::Args => 1,
             Op::Not=> 1,
+            Op::Func=> 0,
             Op::Value => 0,
             Op::Var=> 0,
             Op::Paren => 0,
