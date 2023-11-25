@@ -13,11 +13,11 @@ macro_rules! test_compute{
         fn $name() {
             let text = $i;
             let node = parse(text).unwrap_or_else(|e| {
-                panic!("\nError:\n{}\n", e.format_error($i));
+                panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             //println!("{}", node);
             let value = interpreter::interpret(node).unwrap_or_else(|e| {
-                panic!("\nError:\n{}\n", e.format_error($i));
+                panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             assert_eq!(value, $o.into());
         }
@@ -31,10 +31,10 @@ macro_rules! test_compute_error{
         fn $name() {
             let text = $i;
             let node = parse(text).unwrap_or_else(|e| {
-                panic!("\nError:\n{}\n", e.format_error($i));
+                panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             let err = interpreter::interpret(node).unwrap_err();
-            assert_eq!(err.format_error(text), $o);
+            assert_eq!(err.format_error(text, "file.lum", false).to_string(), $o);
         }
     };
 }

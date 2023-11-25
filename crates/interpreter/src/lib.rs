@@ -12,7 +12,18 @@ impl Functions {
             Builtin::Print => {
                 println!("{}", args);
                 Ok(VType::Undefined)
-            }
+            },
+            Builtin::Pow => {
+                if args.0.len() != 2 {
+                    return Err(PError::new(lexer::Location::zero(), "Expected 2 arguments"));
+                }
+                let a = args.0[0].clone();
+                let b = args.0[1].clone();
+                match (a, b) {
+                    (VType::Number(a), VType::Number(b)) => Ok(VType::Number(a.pow(b as u32))),
+                    _ => Err(PError::new(lexer::Location::zero(), "Expected numbers")),
+                }
+            },
             _ => Err(PError::new(lexer::Location::zero(), "Not yet implemented")),
         }
     }   
@@ -24,12 +35,14 @@ impl Globals {
     pub fn is_builtin(name: &str) -> bool {
         match name {
             "print" => true,
+            "pow" => true,
             _ => false,
         }
     }
     pub fn builtin(name: &str) -> Option<VType> {
         match name {
             "print" => Some(VType::Builtin(Builtin::Print)),
+            "pow" => Some(VType::Builtin(Builtin::Pow)),
             _ => None,
         }
         
@@ -62,7 +75,16 @@ pub fn extractNames(node: &Node) -> Result<Vec<String>,PError> {
 }
 
 pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, PError> {
+    if let Some(v) = dict.get("!return") {
+        //println!("Ret: {} {}", v, node);
+        return Ok(v.clone())
+    }
     match node.op {
+        Op::Return => {
+            let value = compute(node.children.get(0).unwrap(), dict)?;
+            dict.insert("!return".to_string(), value.clone());
+            Ok(value)
+        },
         Op::Func => {
             let name = node.children.get(0).unwrap();
             let args = node.children.get(1).unwrap();
@@ -74,7 +96,7 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
         },
         Op::While => {
             let mut last = VType::Undefined;
-            while compute(node.children.get(0).unwrap(), dict)? != VType::Bool(false) {
+            while dict.get("!return").is_none() && compute(node.children.get(0).unwrap(), dict)? != VType::Bool(false) {
                 last = compute(node.children.get(1).unwrap(), dict)?;
             }
             Ok(last)
@@ -139,8 +161,14 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
                 } else {
                     return compute(node.children.get(2).unwrap(), dict);
                 }
+            } if let VType::Bool(b) = cond {
+                if b {
+                    return compute(node.children.get(1).unwrap(), dict);
+                } else {
+                    return compute(node.children.get(2).unwrap(), dict);
+                }
             } else {
-                return Err(PError::new(node.location, "Invalid condition"));
+                return Err(PError::new(node.location, format!("Invalid condition {}", cond).as_str()));
             }
             let mut last = VType::Undefined;
             for child in &node.children {
@@ -193,6 +221,26 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
         Op::Not => {
             let left = compute(node.left().unwrap(), dict)?;
             Ok(left.not())
+        },
+        Op::Gt => {
+            let left = compute(node.left().unwrap(), dict)?;
+            let right = compute(node.right().unwrap(), dict)?;
+            Ok(left.gt(&right))
+        },
+        Op::Lt => {
+            let left = compute(node.left().unwrap(), dict)?;
+            let right = compute(node.right().unwrap(), dict)?;
+            Ok(left.lt(&right))
+        },
+        Op::Geq => {
+            let left = compute(node.left().unwrap(), dict)?;
+            let right = compute(node.right().unwrap(), dict)?;
+            Ok(left.geq(&right))
+        },
+        Op::Leq => {
+            let left = compute(node.left().unwrap(), dict)?;
+            let right = compute(node.right().unwrap(), dict)?;
+            Ok(left.leq(&right))
         },
 
 

@@ -12,7 +12,7 @@ macro_rules! test_parser {
         #[test]
         fn $name() {
             let node = parse($i).unwrap_or_else(|e| {
-                panic!("\nError:\n{}\n", e.format_error($i));
+                panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             assert_eq!(node.to_string(), $o);
         }
@@ -25,7 +25,7 @@ macro_rules! test_parser_error {
         fn $name() {
             let text = $i;
             let err = parse(text).unwrap_err();
-            assert_eq!(err.format_error(text), $o);
+            assert_eq!(err.format_error(text, "file.lum", false).to_string(), $o);
         }
     };
 }
@@ -40,22 +40,22 @@ mod expressions {
     test_parser!(number_dec_20, "20", "{20}");
     test_parser_error!(number_dec_invalid_characters, 
                  "123asd", 
-                 "123asd\n   ^^^\nInvalid number");
+                 "error: Invalid number\n --> file.lum:1:3\t|\n\t| 123asd\n\t|    ^^^\n");
 
     test_parser!(number_oct_8, "010", "{8}");
     test_parser!(number_oct_20, "024", "{20}");
     test_parser_error!(number_oct_with_hex_error, 
                  "012a", 
-                 "012a\n   ^\nInvalid number");
+                 "error: Invalid number\n --> file.lum:1:3\t|\n\t| 012a\n\t|    ^\n");
     test_parser_error!(err_number_oct_with_dec_error, 
                  "0129", 
-                 "0129\n   ^\nInvalid number");
+                 "error: Invalid number\n --> file.lum:1:3\t|\n\t| 0129\n\t|    ^\n");
 
     test_parser!(number_hex_8, "0x8", "{8}");
     test_parser!(number_hex_20, "0x14", "{20}");
     test_parser_error!(err_number_hex_wrong, 
                  "01x23 adw\nasd", 
-                 "01x23 adw\n  ^^     \nInvalid number");
+                 "error: Invalid number\n --> file.lum:1:2\t|\n\t| 01x23 adw\n\t|   ^^     \n");
 
     test_parser!(expr_number_in_braces, 
                  "(1)", 
@@ -64,6 +64,25 @@ mod expressions {
     test_parser!(expr_simple, 
                  "1 + 2", 
                  "{(1 + 2)}");
+
+    test_parser!(expr_leq, 
+                 "1 <= 2",
+                 "{(1 <= 2)}");
+    test_parser!(expr_lt, 
+                 "1 < 2",
+                 "{(1 < 2)}");
+    test_parser!(expr_geq,
+                 "1 >= 2",
+                 "{(1 >= 2)}");
+    test_parser!(expr_gt,
+                 "1 > 2",
+                 "{(1 > 2)}");
+    test_parser!(expr_return,
+                 "return 1",
+                 "{(return 1)}");
+    test_parser!(expr_function_with_return,
+                 "fn a() {return 1}",
+                 "{fn a() {(return 1)}}");
 
     test_parser!(expr_variables, 
                  "num1 + num2", 
@@ -79,25 +98,25 @@ mod expressions {
                  "{((291 / (2 + 123)) + (({(asd = 123);if(1){(asd + 2)} else ()} * 8) * (num - 4)))}");
     test_parser_error!(err_expr_incomplete, 
                  "12+", 
-                 "Unexpected end of file");
+                 "error: Unexpected end of file\n --> file.lum");
     test_parser_error!(err_expr_incomplete_with_brace, 
                  "12+(", 
-                 "Unexpected end of file");
+                 "error: Unexpected end of file\n --> file.lum");
     test_parser_error!(err_expr_incomplete_with_brace_and_number, 
                  "12+(123", 
-                 "Unexpected end of file, parentheses not closed [3:1]");
+                 "error: Unexpected end of file, parentheses not closed [3:1]\n --> file.lum");
     test_parser_error!(err_expr_incomplete_with_brace_and_number_and_plus, 
                  "12+(123+", 
-                 "Unexpected end of file");
+                 "error: Unexpected end of file\n --> file.lum");
     test_parser_error!(err_expr_only_operator,
                  "+", 
-                 "+\n^\nUnexpected token Plus [0:1]");
+                 "error: Unexpected token Plus [0:1]\n --> file.lum:1:0\t|\n\t| +\n\t| ^\n");
     test_parser_error!(err_expr_missing_operator,
                  "123 321", 
-                 "123 321\n    ^^^\nUnexpected token, missed semicolon?");
+                 "error: Unexpected token, missed semicolon?\n --> file.lum:1:4\t|\n\t| 123 321\n\t|     ^^^\n");
     test_parser_error!(err_expr_with_nested_braces,
                  "((((123)))", 
-                 "Unexpected end of file, parentheses not closed [0:1]");
+                 "error: Unexpected end of file, parentheses not closed [0:1]\n --> file.lum");
 
     test_parser!(expr_simple_call,
                  "func(1,2,3,'asd')",

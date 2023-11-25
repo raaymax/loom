@@ -49,6 +49,10 @@
             {
               "type": "SYMBOL",
               "name": "while"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "return"
             }
           ]
         },
@@ -63,6 +67,19 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "return": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "return"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
         }
       ]
     },

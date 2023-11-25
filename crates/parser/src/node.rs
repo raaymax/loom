@@ -24,16 +24,26 @@ pub enum Op {
     Call,
     While,
     Func,
+    Return,
+    Leq,
+    Lt,
+    Geq,
+    Gt,
 }
 
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Scope => 0,
+            Op::Return => 6,
             Op::Branch => 6,
             Op::Loop => 6,
             Op::While => 6,
             Op::Assign=> 5,
+            Op::Lt=> 5,
+            Op::Leq=> 5,
+            Op::Gt=> 5,
+            Op::Geq=> 5,
             Op::Neq=> 5,
             Op::Eq=> 5,
             Op::Add => 4,
@@ -56,6 +66,10 @@ impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Op::Assign => write!(f, "="),
+            Op::Lt => write!(f, "<"),
+            Op::Leq => write!(f, "<="),
+            Op::Gt => write!(f, ">"),
+            Op::Geq => write!(f, ">="),
             Op::Add => write!(f, "+"),
             Op::Value => write!(f, "X"),
             Op::Var => write!(f, "var"),
@@ -74,6 +88,7 @@ impl Display for Op {
             Op::Mod => write!(f, "%"),
             Op::While => write!(f, "while"),
             Op::Func => write!(f, "Fn"),
+            Op::Return => write!(f, "return"),
         }
     }
 }
@@ -159,7 +174,7 @@ impl Node {
             Op::Call => {
                 self.children.insert(0, node);
             }
-            Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::Func => {
+            Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::Func | Op::Return => {
                 self.children.push(node);
             },
             Op::Assign | Op::Paren => {
@@ -188,7 +203,8 @@ impl Node {
                     self.children.push(node);
                 } 
             },
-            Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Eq | Op::Neq | Op::Mod => {
+            Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Eq | Op::Neq
+                | Op::Mod | Op::Geq | Op::Gt | Op::Leq | Op::Lt => {
                 if let Some(ref mut right) = self.right_mut() {
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
@@ -223,14 +239,29 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.op {
+            Op::Return => {
+                write!(f,"(return {})", OptionalNode(self.children.get(0)))?;
+            },
             Op::Func=> {
-                write!(f,"fn {}({}) {}", OptionalNode(self.children.get(0)),OptionalNode(self.children.get(1)), OptionalNode(self.children.get(2)))?;
+                write!(f,"fn {}{} {}", OptionalNode(self.children.get(0)),OptionalNode(self.children.get(1)), OptionalNode(self.children.get(2)))?;
             },
             Op::While => {
                 write!(f,"while ({}) {}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Call=> {
                 write!(f,"{}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Lt => {
+                write!(f,"({} < {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Gt => {
+                write!(f,"({} > {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Leq => {
+                write!(f,"({} <= {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Geq => {
+                write!(f,"({} >= {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Eq => {
                 write!(f,"({} == {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;

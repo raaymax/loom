@@ -1,5 +1,6 @@
 "fn" @keyword
 "while" @keyword
+"return" @keyword
 "if" @keyword
 "else" @keyword
 "==" @operator

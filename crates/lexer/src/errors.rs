@@ -65,7 +65,7 @@ impl PError {
     }
 }
 
-
+#[derive(Debug, PartialEq, Eq)]
 pub struct FormatedError {
     pub message: String,
     pub location: String,
@@ -90,7 +90,7 @@ impl Display for FormatedError {
                 writeln!(f, "{} {}\n  --> {}", "error:".red().bold(), self.message.bold(), self.location.yellow());
             }
         }else{
-            write!(f, "{}: {}", self.location, self.message);
+            write!(f, "error: {}\n --> {}", self.message, self.location);
             if let Some(line) = &self.line {
                 writeln!(f, "\t|\n\t| {}", line);
             };

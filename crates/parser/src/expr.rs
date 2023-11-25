@@ -28,6 +28,11 @@ impl Expression {
             Token::LBrace(loc) => Node::new(Op::Scope, *loc),
             Token::LParen(loc) => Node::new(Op::Paren, *loc),
             Token::If(loc) => Node::new(Op::Branch, *loc),
+            Token::Return(loc) => Node::new(Op::Return, *loc),
+            Token::Lt(loc) => Node::new(Op::Lt, *loc),
+            Token::Leq(loc) => Node::new(Op::Leq, *loc),
+            Token::Gt(loc) => Node::new(Op::Gt, *loc),
+            Token::Geq(loc) => Node::new(Op::Geq, *loc),
             _ => {
                 panic!("Unexpected token to build expression: {}", token);
             }
@@ -86,6 +91,13 @@ impl Expression {
                                 tree.add(block);
                                 return Ok((tree, tok));
                             }
+                            Token::Return(..)=> {
+                                let mut ret = Expression::node_from(token);
+                                let (expr, tok) = Expression::consume(token, iter, level + 1)?;
+                                ret.add(expr);
+                                tree.add(ret);
+                                return Ok((tree, tok));
+                            },
                             _ => {
                                 return Err(PError::new(token.get_location(), format!("Unexpected token {}", token).as_str()));
                             }

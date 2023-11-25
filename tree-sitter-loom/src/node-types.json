@@ -248,6 +248,45 @@
     }
   },
   {
+    "type": "return",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "call",
+          "named": true
+        },
+        {
+          "type": "function",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "source_file",
     "named": true,
     "fields": {},
@@ -300,6 +339,10 @@
         },
         {
           "type": "number",
+          "named": true
+        },
+        {
+          "type": "return",
           "named": true
         },
         {
@@ -427,6 +470,10 @@
   },
   {
     "type": "if",
+    "named": false
+  },
+  {
+    "type": "return",
     "named": false
   },
   {

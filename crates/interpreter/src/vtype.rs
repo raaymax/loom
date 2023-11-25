@@ -6,6 +6,7 @@ use parser::{Value, Node};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Builtin {
     Print,
+    Pow,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +25,7 @@ impl From<Value> for VType {
         match n {
             Value::Number(n) => VType::Number(n),
             Value::String(s) => VType::String(s),
-            _ => panic!("Type not yet implemented"),
+            _ => panic!("Type not yet implemented {}", n),
         }
     }
 }
@@ -52,6 +53,22 @@ impl Display for VType {
             VType::Number(n) => write!(f, "{}", n),
             VType::String(s) => write!(f, "{}", s),
             VType::Undefined => write!(f, "undefined"),
+            VType::Bool(b) => write!(f, "{}", b),
+            VType::Builtin(b) => write!(f, "{:?}", b),
+            VType::Func(_, _) => write!(f, "function"),
+            VType::Ref(s) => write!(f, "ref {}", s),
+            VType::Args(args) => {
+                write!(f, "(")?;
+                let mut first = true;
+                for arg in args {
+                    if !first {
+                        write!(f, ", ")?;
+                    }
+                    first = false;
+                    write!(f, "{}", arg)?;
+                }
+                write!(f, ")")
+            },
             _ => panic!("Type not yet implemented"),
         }
     }
@@ -139,6 +156,30 @@ impl  VType {
             VType::Number(n1) => VType::Bool(*n1 > 0),
             VType::Bool(n1) => VType::Bool(!n1),
             _ => panic!("Cannot not non-bools"),
+        }
+    }
+    pub fn leq(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 <= n2),
+            _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+    pub fn geq(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 >= n2),
+            _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+    pub fn lt(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 < n2),
+            _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+    pub fn gt(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 > n2),
+            _ => panic!("Cannot compare non-numbers"),
         }
     }
 }
