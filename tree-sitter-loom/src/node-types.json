@@ -20,6 +20,10 @@
           "named": true
         },
         {
+          "type": "function",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -55,6 +59,10 @@
           "named": true
         },
         {
+          "type": "function",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -87,6 +95,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "function",
           "named": true
         },
         {
@@ -132,7 +144,7 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "name",
           "named": true
         }
       ]
@@ -156,6 +168,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "function",
           "named": true
         },
         {
@@ -320,6 +336,10 @@
         },
         {
           "type": "call",
+          "named": true
+        },
+        {
+          "type": "function",
           "named": true
         },
         {

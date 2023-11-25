@@ -10,7 +10,7 @@
 "/" @operator
 "%" @operator
 "=" @operator.assignment
-(call (identifier) @method)
+(call (name) @method)
 (function (name) @function.name
           (params (param) @parameter))
 (assignment) @assignment

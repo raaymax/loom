@@ -6,6 +6,13 @@ module.exports = grammar({
     /\s/,
   ],
 
+  precedences: $ => [
+    [
+      $.name,
+      $.identifier,
+    ]
+  ],
+
   rules: {
     source_file: $ => repeat($.statement),
 
@@ -21,7 +28,6 @@ module.exports = grammar({
         $._expression,
         $.choice,
         $.while,
-        $.function,
       ),
       optional(';')
     ),
@@ -48,6 +54,7 @@ module.exports = grammar({
       $._noun,
       $._parenthesis,
       $.block,
+      $.function,
     ),
 
     binary_expression: $ => choice(
@@ -61,14 +68,14 @@ module.exports = grammar({
     ),
 
     _noun: $ => choice(
-      $.identifier,
+      prec(1, $.identifier),
       $.number,
       $.string,
       $.call,
     ),
 
-    call: $ => prec(1, seq(
-      prec(3, $.identifier),
+    call: $ => prec(2, seq(
+      $.name,
       $.arguments
     )),
 

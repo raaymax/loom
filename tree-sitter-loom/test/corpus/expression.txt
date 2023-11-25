@@ -80,7 +80,7 @@ print(1,2,'test');
 (source_file
   (statement
     (call
-      (identifier)
+      (name)
       (arguments
         (number)
         (number)
