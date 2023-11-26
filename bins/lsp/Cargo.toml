@@ -10,6 +10,8 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+lexer = { path = "../../crates/lexer" }
+parser = { path = "../../crates/parser" }
 regex = "1.10.2"
 serde = { version = "1.0.192", features = ["derive"] }
 serde_json = "1.0.108"

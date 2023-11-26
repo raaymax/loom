@@ -447,6 +447,8 @@ dependencies = [
 name = "lsp"
 version = "0.1.0"
 dependencies = [
+ "lexer",
+ "parser",
  "regex",
  "serde",
  "serde_json",

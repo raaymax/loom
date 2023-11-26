@@ -73,8 +73,75 @@ Options:
   -V, --version    Print version
 ```
 
+
+
 ## Code highlights
-Tree-sitter parser and highlighting included
+Tree-sitter parser and highlighting included.
+```bash
+cd tree-sitter-loom
+tree-sitter generate
+tree-sitter test 
+```
+
+Configuration for NeoVim:
+
+## Language server
+
+Repository contains also LSP server for language. 
+For now only simple diagnostics are supported.
+
+## NeoVim configuration
+
+Configuration to start development in NeoVim. 
+
+### filetype
+```lua
+vim.filetype.add({
+  extension = {
+    lum = 'loom',
+  }
+})
+```
+
+### LSP
+```
+local configs = require 'lspconfig.configs'
+
+if not configs.loom then
+  configs.loom = {
+    default_config = {
+      cmd = { '~/Workspace/Loom/target/debug/lsp' },
+      root_dir = lspconfig.util.root_pattern('.git'),
+      filetypes = { 'loom' },
+      name = { 'loom' },
+    },
+  }
+end
+
+lspconfig.loom.setup {}
+```
+
+### tree-sitter
+```lua
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+parser_config.loom = {
+  install_info = {
+    url = "~/Workspace/Loom/tree-sitter-loom", -- path to location 
+    files = {"src/parser.c"},
+    branch = "main",
+    generate_requires_npm = false,
+    requires_generate_from_grammar = false,
+  },
+
+  filetype = "loom",
+}
+vim.treesitter.language.register('loom', 'loom')  
+```
+
+Loading new tree-sitter config in nvim:
+```
+:TSUpdate
+```
 
 ## License
 MIT License

@@ -6,7 +6,7 @@ use crate::loc::Location;
 #[derive(Debug)]
 pub struct PError {
     location: Location,
-    message: String,
+    pub message: String,
 }
 
 impl Display for PError {
@@ -26,6 +26,22 @@ impl PError {
             message: message.to_string(),
         }
     }
+    
+    pub fn get_start(&self) -> (usize, usize) {
+        match self.location {
+            Location::Range { line_pos, line, .. } => (line, line_pos),
+            Location::Point { line_pos, line, .. } => (line, line_pos),
+            Location::Eof => (0, 0),
+        }
+    }
+    pub fn get_end(&self) -> (usize, usize) {
+        match self.location {
+            Location::Range { line_pos, line, length, .. } => (line, line_pos + length),
+            Location::Point { line_pos, line, .. } => (line, line_pos),
+            Location::Eof => (0, 0),
+        }
+    }
+
     pub fn format_error(&self, text: &str, file: &str, colors: bool) -> FormatedError{
         let Location::Range { pos, line_pos, length, line: l } = self.location.to_range() else {
             return FormatedError{
