@@ -1,6 +1,7 @@
 use std::slice::Iter;
 use lexer::{Location,Token, PError};
 use super::{Node, Op, Block, Branch, Call, Loop, Func};
+use crate::Parser;
 
 enum ExpressionState {
     Start,
@@ -38,9 +39,10 @@ impl Expression {
             }
         }
     }
+}
 
-
-    pub fn consume(tok:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
+impl Parser for Expression {
+    fn consume(tok:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::Paren, tok.get_location());
         let mut state = ExpressionState::Start;
         loop {
@@ -58,7 +60,7 @@ impl Expression {
                     } else if token.is_block() {
                         match token {
                             Token::LBrace(..) => {
-                                let (block, tok) = Block::consume(token, iter, level + 1)?;
+                                let (block, tok) = Block::consume(token, iter)?;
                                 if let Some(Token::RBrace(..)) = tok {
                                     tree.add(block);
                                     state = ExpressionState::Op;
@@ -68,7 +70,7 @@ impl Expression {
                                 }
                             },
                             Token::LParen(..) => {
-                                let (block, tok) = Expression::consume(token, iter, level + 1)?;
+                                let (block, tok) = Expression::consume(token, iter)?;
                                 if let Some(Token::RParen(..)) = tok {
                                     tree.add(block);
                                     state = ExpressionState::Op;
@@ -77,23 +79,23 @@ impl Expression {
                                 }
                             },
                             Token::If(..) => {
-                                let (block, tok) = Branch::consume(token, iter, level + 1)?;
+                                let (block, tok) = Branch::consume(token, iter)?;
                                 tree.add(block);
                                 return Ok((tree, tok));
                             }
                             Token::While(..) => {
-                                let (block, tok) = Loop::consume(token, iter, level + 1)?;
+                                let (block, tok) = Loop::consume(token, iter)?;
                                 tree.add(block);
                                 return Ok((tree, tok));
                             }
                             Token::Fn(..) => {
-                                let (block, tok) = Func::consume(token, iter, level + 1)?;
+                                let (block, tok) = Func::consume(token, iter)?;
                                 tree.add(block);
                                 return Ok((tree, tok));
                             }
                             Token::Return(..)=> {
                                 let mut ret = Expression::node_from(token);
-                                let (expr, tok) = Expression::consume(token, iter, level + 1)?;
+                                let (expr, tok) = Expression::consume(token, iter)?;
                                 ret.add(expr);
                                 tree.add(ret);
                                 return Ok((tree, tok));
@@ -122,7 +124,7 @@ impl Expression {
                         tree.add(node);
                         state = ExpressionState::Noun;
                     } else if let Token::LParen(..) = token {
-                        let (block, tok) = Call::consume(token, iter, level + 1)?;
+                        let (block, tok) = Call::consume(token, iter)?;
                         if let Some(Token::RParen(..)) = tok {
                             tree.add(block);
                             state = ExpressionState::Op;

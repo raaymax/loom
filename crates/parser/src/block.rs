@@ -1,14 +1,15 @@
 use std::slice::Iter;
 use lexer::{Token, PError};
 use super::{Op, Expression, Node};
+use super::Parser;
 
 pub struct Block;
 
-impl Block {
-    pub fn consume(token:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
+impl Parser for Block {
+    fn consume(token:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::Scope, token.get_location());
         loop {
-            let (node, tok) = Expression::consume(token, iter, level + 1)?;
+            let (node, tok) = Expression::consume(token, iter)?;
             tree.add(node);
 
             let Some(t) = tok else {

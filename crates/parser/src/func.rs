@@ -2,6 +2,7 @@ use std::slice::Iter;
 use lexer::{Token, PError};
 use super::{Op, Expression, Node, Params};
 use lexer::Location;
+use crate::Parser;
 
 pub struct Func;
 
@@ -38,15 +39,17 @@ impl Func{
             }
         }
     }
-    pub fn consume(token:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
+}
+impl Parser for Func {
+    fn consume(token:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::DefineFunc, token.get_location());
         let name = accept!(iter, Id);
         tree.add(Func::node_from(name));
         accept!(iter, LParen);
-        let (params, tok) = Params::consume(token, iter, level + 1)?;
+        let (params, tok) = Params::consume(token, iter)?;
         tree.add(params);
         expect!(tok, RParen);
-        let (expr, tok2) = Expression::consume(token, iter, level + 1)?;
+        let (expr, tok2) = Expression::consume(token, iter)?;
         tree.add(expr);
         return Ok((tree, tok2));
     }

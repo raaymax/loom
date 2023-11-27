@@ -26,9 +26,12 @@ pub use args::Args;
 pub use func::Func;
 pub use params::Params;
 
+trait Parser {
+    fn consume(token: &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError>;
+}
 
 pub fn parse(iter: &mut Iter<Token> ) -> Result<Node, PError> {
-    let (node, ret) = Block::consume(&Token::Start, iter, 0)?;
+    let (node, ret) = Block::consume(&Token::Start, iter)?;
     if let Some(token) = ret {
         if let Token::Eof = token {
             return Ok(node);
@@ -42,6 +45,7 @@ pub fn parse(iter: &mut Iter<Token> ) -> Result<Node, PError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lexer::{Token, Location};
 
     #[macro_export]
     macro_rules! test_ast_expr{
@@ -51,7 +55,7 @@ mod tests {
                 let tokens = vec![$(Token::$token(Location::zero(), $($arg),*)),+];
                 let mut iter = tokens.iter();
                 let tok = Token::Start;
-                let (scope, _) = Block::consume(&tok, &mut iter, 0).unwrap();
+                let (scope, _) = Block::consume(&tok, &mut iter).unwrap();
                 assert_eq!(scope.to_string(), $o);
             }
         };
@@ -111,7 +115,7 @@ mod tests {
         let vec = tokens![Number(6), RBrace()];
         let mut iter = vec.iter();
         let start = Token::Start;
-        let (_, Some(Token::RBrace(..))) = Expression::consume(&start, &mut iter, 0).unwrap() else {
+        let (_, Some(Token::RBrace(..))) = Expression::consume(&start, &mut iter).unwrap() else {
             panic!("Expected return value");
         };
     }
@@ -120,7 +124,7 @@ mod tests {
         let vec = tokens![LParen(), Number(5), RParen(), LBrace(), Number(5), RBrace(), Else(), LBrace(), Number(6), RBrace(), RBrace()];
         let start = Token::Start;
         let mut iter = vec.iter();
-        let (_, Some(Token::RBrace(..))) = Branch::consume(&start, &mut iter, 0).unwrap() else {
+        let (_, Some(Token::RBrace(..))) = Branch::consume(&start, &mut iter).unwrap() else {
             panic!("Expected return value");
         };
     }

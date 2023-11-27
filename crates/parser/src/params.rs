@@ -1,11 +1,11 @@
 use std::slice::Iter;
 use lexer::{Token, PError, Location};
-use super::{Op, Node};
+use super::{Op, Node, Parser};
 
 pub struct Params;
 
-impl Params{
-    pub fn consume(token:  &Token, iter: &mut Iter<Token>, level: usize) -> Result<(Node, Option<Token>), PError> {
+impl Parser for Params{
+    fn consume(token:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::Args, token.get_location());
         loop {
             let Some(token) = iter.next() else {
@@ -17,8 +17,8 @@ impl Params{
             let Token::Id(loc, id) = token else {
                 return Err(PError::new(Location::Eof, "Unexpected end of file"));
             };
-            let idNode = Node::new(Op::Variable, *loc).set_id(id.clone());
-            tree.add(idNode);
+            let id_node = Node::new(Op::Variable, *loc).set_id(id.clone());
+            tree.add(id_node);
 
             let tok = iter.next();
             let Some(t) = tok else {
@@ -32,9 +32,9 @@ impl Params{
                     continue;
                 },
                 Token::Eof => {
-                    return Err(PError::new(t.get_location(), format!("Unexpected end of file").as_str()))?;
+                    return Err(PError::new(t.get_location(), "Unexpected end of file"))?;
                 },
-                _ => Err(PError::new(t.get_location(), format!("Unexpected token, missed semicolon?").as_str()))?,
+                _ => Err(PError::new(t.get_location(), "Unexpected token, missed semicolon?"))?,
             }
         }
     }
