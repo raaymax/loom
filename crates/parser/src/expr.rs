@@ -15,7 +15,7 @@ impl Expression {
         match token {
             Token::Number(loc, n) => Node::new(Op::Value, *loc).set_value((*n).into()),
             Token::String(loc, n) => Node::new(Op::Value, *loc).set_value(n.into()),
-            Token::Id(loc, id) => Node::new(Op::Var, *loc).set_id(id.clone()),
+            Token::Id(loc, id) => Node::new(Op::Variable, *loc).set_id(id.clone()),
             Token::Plus(loc) => Node::new(Op::Add, *loc),
             Token::Minus(loc) => Node::new(Op::Sub, *loc),
             Token::Star(loc) => Node::new(Op::Mul, *loc),

@@ -19,11 +19,11 @@ pub enum Op {
     Mul,
     Div,
     Value,
-    Var,
+    Variable,
     Assign,
     Call,
     While,
-    Func,
+    DefineFunc,
     Return,
     Leq,
     Lt,
@@ -54,9 +54,9 @@ impl Op {
             Op::Call => 1,
             Op::Args => 1,
             Op::Not=> 1,
-            Op::Func=> 0,
+            Op::DefineFunc=> 0,
             Op::Value => 0,
-            Op::Var=> 0,
+            Op::Variable=> 0,
             Op::Paren => 0,
         }
     }
@@ -72,7 +72,7 @@ impl Display for Op {
             Op::Geq => write!(f, ">="),
             Op::Add => write!(f, "+"),
             Op::Value => write!(f, "X"),
-            Op::Var => write!(f, "var"),
+            Op::Variable => write!(f, "var"),
             Op::Div => write!(f, "/"),
             Op::Mul => write!(f, "*"),
             Op::Sub => write!(f, "-"),
@@ -87,7 +87,7 @@ impl Display for Op {
             Op::Not => write!(f, "!"),
             Op::Mod => write!(f, "%"),
             Op::While => write!(f, "while"),
-            Op::Func => write!(f, "Fn"),
+            Op::DefineFunc => write!(f, "Fn"),
             Op::Return => write!(f, "return"),
         }
     }
@@ -137,7 +137,7 @@ impl Node {
         self
     }
     pub fn set_id(mut self, id: String) -> Self {
-        if Op::Var != self.op {
+        if Op::Variable != self.op {
             panic!("Cannot set id on non-var node");
         }
         self.id = Some(id);
@@ -174,7 +174,7 @@ impl Node {
             Op::Call => {
                 self.children.insert(0, node);
             }
-            Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::Func | Op::Return => {
+            Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::DefineFunc | Op::Return => {
                 self.children.push(node);
             },
             Op::Assign | Op::Paren => {
@@ -242,7 +242,7 @@ impl Display for Node {
             Op::Return => {
                 write!(f,"(return {})", OptionalNode(self.children.get(0)))?;
             },
-            Op::Func=> {
+            Op::DefineFunc=> {
                 write!(f,"fn {}{} {}", OptionalNode(self.children.get(0)),OptionalNode(self.children.get(1)), OptionalNode(self.children.get(2)))?;
             },
             Op::While => {
@@ -288,7 +288,7 @@ impl Display for Node {
                 write!(f,"({} = {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Value => {write!(f, "{}", self.value.as_ref().unwrap())?;},
-            Op::Var => {write!(f, "{}", self.id.as_ref().unwrap())?;},
+            Op::Variable => {write!(f, "{}", self.id.as_ref().unwrap())?;},
             Op::Scope => {
                 write!(f,"{{")?;
                 for (idx, node) in self.children.iter().enumerate() {

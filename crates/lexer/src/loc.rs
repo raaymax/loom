@@ -38,6 +38,14 @@ impl Location {
     pub fn zero() -> Self {
         Self::Point { pos:0, line_pos:0, line:1 } 
     }
+
+    pub fn get_line(&self) -> usize {
+        match self {
+            Self::Range { line, ..} => *line,
+            Self::Point { line, .. } => *line,
+            Self::Eof => 0,
+        }
+    }
     pub fn new_point(pos: usize, line: usize, line_pos: usize) -> Self {
         Self::Point { pos, line_pos, line } 
     }

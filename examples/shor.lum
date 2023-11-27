@@ -34,4 +34,6 @@ x = 21;
 y = 49;
 print("gdc("+x+","+y+") = " + gdc(x,y));
 print("shor(15) = " + shor(15));
+assert(gdc(15, 21) == 3);
+assert(shor(15) == "[ 5, 3 ]");
 0

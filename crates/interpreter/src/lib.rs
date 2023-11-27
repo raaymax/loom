@@ -1,136 +1,112 @@
 mod vtype;
-use std::{collections::HashMap, fmt::Display};
+mod context;
+mod builtins;
+use std::rc::Rc;
 
-use parser::{Node, Op, Value};
+use parser::{Node, Op};
 use lexer::PError;
-use vtype::{VType, Builtin};
+use builtins::Builtin;
+use vtype::VType;
+use context::Context;
 
-struct Functions;
-impl Functions {
-    pub fn call(name: Builtin, args: Args) -> Result<VType, PError> {
-        match name {
-            Builtin::Print => {
-                println!("{}", args);
-                Ok(VType::Undefined)
-            },
-            Builtin::Pow => {
-                if args.0.len() != 2 {
-                    return Err(PError::new(lexer::Location::zero(), "Expected 2 arguments"));
-                }
-                let a = args.0[0].clone();
-                let b = args.0[1].clone();
-                match (a, b) {
-                    (VType::Number(a), VType::Number(b)) => Ok(VType::Number(a.pow(b as u32))),
-                    _ => Err(PError::new(lexer::Location::zero(), "Expected numbers")),
-                }
-            },
-            _ => Err(PError::new(lexer::Location::zero(), "Not yet implemented")),
-        }
-    }   
-}
-
-
-struct Globals;
-impl Globals {
-    pub fn is_builtin(name: &str) -> bool {
-        match name {
-            "print" => true,
-            "pow" => true,
-            _ => false,
-        }
-    }
-    pub fn builtin(name: &str) -> Option<VType> {
-        match name {
-            "print" => Some(VType::Builtin(Builtin::Print)),
-            "pow" => Some(VType::Builtin(Builtin::Pow)),
-            _ => None,
-        }
-        
-    }
-}
-
-struct Args(Vec<VType>);
-impl Display for Args {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut first = true;
-        for (idx, arg) in self.0.iter().enumerate() {
-            if idx != 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "{}", arg)?;
-        }
-        Ok(())
-    }
-}
 
 pub fn extractNames(node: &Node) -> Result<Vec<String>,PError> {
     let mut names = Vec::new();
     for child in &node.children {
-        if child.op != Op::Var {
+        if child.op != Op::Variable {
             return Err(PError::new(child.location, format!("Expected argument name but found: {}", child.op).as_str()));
         }
         names.push(child.id.as_ref().unwrap().clone());
     }
     Ok(names)
 }
+macro_rules! compute_unary{
+    ($node:ident, $ctx: ident, $op:ident) => {
+        {
+            let left = compute($node.left().unwrap(), $ctx)?;
+            Ok(left.$op())
+        }
+    };
+}
+macro_rules! compute_binary {
+    ($node:ident, $ctx: ident, $op:ident) => {
+        {
+            let left = compute($node.left().unwrap(), $ctx)?;
+            let right = compute($node.right().unwrap(), $ctx)?;
+            Ok(left.$op(&right))
+        }
+    };
+}
 
-pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, PError> {
-    if let Some(v) = dict.get("!return") {
+macro_rules! compute_binop {
+    ($node:ident, $ctx: ident, $op:tt) => {
+        {
+            let left = compute($node.left().unwrap(), $ctx)?;
+            let right = compute($node.right().unwrap(), $ctx)?;
+            Ok(left $op right)
+        }
+    };
+}
+
+pub fn compute(node: &Node, context: &mut Rc<Context>) -> Result<VType, PError> {
+    if let Some(v) = context.get_var("!return") {
         //println!("Ret: {} {}", v, node);
         return Ok(v.clone())
     }
     match node.op {
         Op::Return => {
-            let value = compute(node.children.get(0).unwrap(), dict)?;
-            dict.insert("!return".to_string(), value.clone());
+            let value = compute(node.children.get(0).unwrap(), context)?;
+            Rc::get_mut(context).unwrap().set_var("!return", value.clone());
             Ok(value)
         },
-        Op::Func => {
+        Op::DefineFunc => {
             let name = node.children.get(0).unwrap();
             let args = node.children.get(1).unwrap();
             let body = node.children.get(2).unwrap();
             let argNames = extractNames(args)?;
             let func = VType::Func(argNames, body.clone());
-            dict.insert(name.id.as_ref().unwrap().clone(), func);
+            Rc::get_mut(context).unwrap().set_var(name.id.as_ref().unwrap(), func);
+            //dict.insert(name.id.as_ref().unwrap().clone(), func);
             Ok(VType::Ref(name.id.as_ref().unwrap().clone()))
         },
         Op::While => {
             let mut last = VType::Undefined;
-            while dict.get("!return").is_none() && compute(node.children.get(0).unwrap(), dict)? != VType::Bool(false) {
-                last = compute(node.children.get(1).unwrap(), dict)?;
+            while context.get_var("!return").is_none() && compute(node.children.get(0).unwrap(), context)? != VType::Bool(false) {
+                last = compute(node.children.get(1).unwrap(), context)?;
             }
             Ok(last)
         },
         Op::Args => {
             let mut args = Vec::new();
             for child in &node.children {
-                args.push(compute(child, dict)?);
+                args.push(compute(child, context)?);
             }
             Ok(VType::Args(args))
         },
         Op::Call => {
-            let func = compute(node.children.get(0).unwrap(), dict)?;
+            let func = compute(node.children.get(0).unwrap(), context)?;
             match func {
-                VType::Builtin(name)  => {
-                    let args = compute(node.children.get(1).unwrap(), dict)?;
+                VType::Builtin(func)  => {
+                    let args = compute(node.children.get(1).unwrap(), context)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
-                    Functions::call(name, Args(args)) 
+                    func.call(&args)
                 },
                 VType::Ref(name) => {
-                    let args = compute(node.children.get(1).unwrap(), dict)?;
+                    let args = compute(node.children.get(1).unwrap(), context)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
-                    let func = dict.get(&name).unwrap();
+                    let func = context.get_var(&name).unwrap();
                     match func {
                         VType::Func(argNames, body) => {
-                            let mut newDict = dict.clone();
+                            let mut childContext = Context::new_child(&name, node.location, context);
                             for (idx, arg) in argNames.iter().enumerate() {
-                                newDict.insert(arg.clone(), args.get(idx).unwrap().clone());
+                                Rc::get_mut(&mut childContext).unwrap().set_var(arg, args.get(idx).unwrap().clone());
+                                //newDict.insert(arg.clone(), args.get(idx).unwrap().clone());
                             }
-                            compute(&body, &mut newDict)
+                            compute(&body, &mut childContext)
                         },
                         _ => {
                             return Err(PError::new(node.location, "Not a function"));
@@ -138,15 +114,16 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
                     }
                 },
                 VType::Func(argNames, body) => {
-                    let args = compute(node.children.get(1).unwrap(), dict)?;
+                    let args = compute(node.children.get(1).unwrap(), context)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
-                    let mut newDict = dict.clone();
+                    let mut childContext = Context::new_child(node.id.as_ref().unwrap_or(&"".to_string()).as_str(), node.location, context);
                     for (idx, arg) in argNames.iter().enumerate() {
-                        newDict.insert(arg.clone(), args.get(idx).unwrap().clone());
+                        Rc::get_mut(&mut childContext).unwrap().set_var(arg, args.get(idx).unwrap().clone());
+                        //newDict.insert(arg.clone(), args.get(idx).unwrap().clone());
                     }
-                    compute(&body, &mut newDict)
+                    compute(&body, &mut childContext)
                 },
                 _ => {
                     return Err(PError::new(node.location, "Not a function"));
@@ -154,94 +131,47 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
             }
         },
         Op:: Branch=> {
-            let cond = compute(node.children.get(0).unwrap(), dict)?;
+            let cond = compute(node.children.get(0).unwrap(), context)?;
             if let VType::Number(c) = cond {
                 if c != 0 {
-                    return compute(node.children.get(1).unwrap(), dict);
+                    return compute(node.children.get(1).unwrap(), context);
                 } else {
-                    return compute(node.children.get(2).unwrap(), dict);
+                    return compute(node.children.get(2).unwrap(), context);
                 }
             } if let VType::Bool(b) = cond {
                 if b {
-                    return compute(node.children.get(1).unwrap(), dict);
+                    return compute(node.children.get(1).unwrap(), context);
                 } else {
-                    return compute(node.children.get(2).unwrap(), dict);
+                    return compute(node.children.get(2).unwrap(), context);
                 }
             } else {
                 return Err(PError::new(node.location, format!("Invalid condition {}", cond).as_str()));
             }
             let mut last = VType::Undefined;
             for child in &node.children {
-                last = compute(child, dict)?;
+                last = compute(child, context)?;
             }
             Ok(last)
         },
         Op::Scope | Op::Paren | Op::Loop => {
             let mut last = VType::Undefined;
             for child in &node.children {
-                last = compute(child, dict)?;
+                last = compute(child, context)?;
             }
             Ok(last)
         },
-        Op::Add => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left + right)
-        },
-        Op::Sub => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left - right)
-        },
-        Op::Mul => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left * right)
-        },
-        Op::Div => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left / right)
-        },
-        Op::Mod => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.modulo(&right))
-        },
-        Op::Eq => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.equal(&right))
-        },
-        Op::Neq => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.not_equal(&right))
-        },
-        Op::Not => {
-            let left = compute(node.left().unwrap(), dict)?;
-            Ok(left.not())
-        },
-        Op::Gt => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.gt(&right))
-        },
-        Op::Lt => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.lt(&right))
-        },
-        Op::Geq => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.geq(&right))
-        },
-        Op::Leq => {
-            let left = compute(node.left().unwrap(), dict)?;
-            let right = compute(node.right().unwrap(), dict)?;
-            Ok(left.leq(&right))
-        },
+        Op::Add => compute_binop!(node, context, +),
+        Op::Sub => compute_binop!(node, context, -),
+        Op::Mul => compute_binop!(node, context, *),
+        Op::Div => compute_binop!(node, context, /),
+        Op::Mod => compute_binary!(node, context, modulo),
+        Op::Eq => compute_binary!(node, context, equal),
+        Op::Neq => compute_binary!(node, context, not_equal),
+        Op::Not => compute_unary!(node, context, not),
+        Op::Gt => compute_binary!(node, context, gt),
+        Op::Lt => compute_binary!(node, context, lt),
+        Op::Geq => compute_binary!(node, context, geq),
+        Op::Leq => compute_binary!(node, context, leq),
 
 
         Op::Value => {
@@ -251,26 +181,32 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
             Ok(val.clone().into())
 
         },
-        Op::Var => {
+        Op::Variable => {
             let Some(ref id) = node.id else {
                 return Err(PError::new(node.location, "No id or value for definition"));
             };
 
-            if let Some(v) = Globals::builtin(id) {
+            if let Some(v) = Builtin::try_new(id) {
                 return Ok(v);
             }
 
+            let Some(val) = context.get_var(id) else {
+                return Err(PError::new(node.location, "Variable not defined"));
+            };
+            /*
             let Some(val) = dict.get(id) else {
                 return Err(PError::new(node.location, "Variable not defined"));
             };
+            */
             Ok(val.clone())
         },
         Op::Assign => {
             let Some(ref left) = node.left().unwrap().id else {
                 return Err(PError::new(node.location, "Invalid LHS for assignment"));
             };
-            let right = compute(node.right().unwrap(), dict)?;
-            dict.insert(left.clone(), right.clone());
+            let right = compute(node.right().unwrap(), context)?;
+            Rc::get_mut(context).unwrap().set_var(left, right.clone());
+            //dict.insert(left.clone(), right.clone());
             Ok(right)
         }
         _ => {
@@ -282,7 +218,7 @@ pub fn compute(node: &Node, dict: &mut HashMap<String, VType>) -> Result<VType, 
 }
 
 pub fn interpret(node: Node) -> Result<VType, PError> {
-    let mut dict = HashMap::new();
-    compute(&node, &mut dict)
+    let mut context = Context::new("global", node.location);
+    compute(&node, &mut context)
 }
 

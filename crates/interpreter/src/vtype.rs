@@ -2,12 +2,7 @@ use std::fmt::Display;
 use std::ops::{Add, Mul, Sub, Div};
 
 use parser::{Value, Node};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Builtin {
-    Print,
-    Pow,
-}
+use crate::builtins::Builtin;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VType {
@@ -140,6 +135,7 @@ impl  VType {
         match (self, other) {
             (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 == n2),
             (VType::Bool(n1), VType::Bool(n2)) => VType::Bool(n1 == n2),
+            (VType::String(n1), VType::String(n2)) => VType::Bool(n1 == n2),
             _ => panic!("Cannot compare non-numbers"),
         }
     }

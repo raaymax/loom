@@ -17,7 +17,7 @@ impl Params{
             let Token::Id(loc, id) = token else {
                 return Err(PError::new(Location::Eof, "Unexpected end of file"));
             };
-            let idNode = Node::new(Op::Var, *loc).set_id(id.clone());
+            let idNode = Node::new(Op::Variable, *loc).set_id(id.clone());
             tree.add(idNode);
 
             let tok = iter.next();
