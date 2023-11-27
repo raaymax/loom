@@ -11,7 +11,7 @@ mod params;
 
 use std::slice::Iter;
 
-use lexer::{Location,Token, PError};
+use lexer::{Token, PError};
 
 pub use value::Value;
 pub use self::node::{Node, Op};

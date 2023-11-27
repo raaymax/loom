@@ -116,48 +116,36 @@ impl Token {
     }
 
     pub fn is_operator(&self) -> bool {
-        match self {
-            Token::Plus(..) => true,
-            Token::Eq(..) => true,
-            Token::Minus(..) => true,
-            Token::Star(..) => true,
-            Token::Slash(..) => true,
-            Token::Neq(..) => true,
-            Token::Assign(..) => true,
-            Token::Mod(..) => true,
-            Token::Lt(..) => true,
-            Token::Leq(..) => true,
-            Token::Gt(..) => true,
-            Token::Geq(..) => true,
-            _ => false,
-        }
+        matches!(self, Token::Plus(..) 
+                 | Token::Eq(..) 
+                 | Token::Minus(..) 
+                 | Token::Star(..) 
+                 | Token::Slash(..) 
+                 | Token::Neq(..) 
+                 | Token::Assign(..) 
+                 | Token::Mod(..) 
+                 | Token::Lt(..) 
+                 | Token::Leq(..)
+                 | Token::Gt(..)
+                 | Token::Geq(..))
     }
     pub fn is_modifier(&self) -> bool {
-        match self {
-            Token::Not(..) => true,
-            _ => false,
-        }
+        matches!(self, Token::Not(..))
     }
     pub fn is_block(&self) -> bool {
-        match self {
-            Token::LParen(..) => true,
-            Token::LBrace(..) => true,
-            Token::If(..) => true,
-            Token::While(..) => true,
-            Token::Loop(..) => true,
-            Token::Fn(..) => true,
-            Token::Return(..) => true,
-            _ => false,
-        }
+        matches!(self, Token::LParen(..) 
+                 | Token::LBrace(..)
+                 | Token::If(..)
+                 | Token::While(..)
+                 | Token::Loop(..)
+                 | Token::Fn(..)
+                 | Token::Return(..))
     }
 
     pub fn is_noun(&self) -> bool {
-        match self {
-            Token::Number(..) => true,
-            Token::Id(..) => true,
-            Token::String(..) => true,
-            _ => false,
-        }
+        matches!(self, Token::Number(..)
+                 | Token::Id(..)
+                 | Token::String(..))
     }
 }
 

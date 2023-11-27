@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use lexer::PError;
 
-use crate::{vtype::VType};
+use crate::vtype::VType;
 
 pub struct Args<'a>(&'a Vec<VType>);
 impl Display for Args<'_> {

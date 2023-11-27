@@ -1,6 +1,6 @@
 use std::slice::Iter;
 use lexer::{Token, PError, Location};
-use super::{Op, Expression, Node};
+use super::{Op, Node};
 
 pub struct Params;
 
