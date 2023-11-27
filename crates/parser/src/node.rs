@@ -1,8 +1,6 @@
 use super::value::Value;
 use std::{fmt::Display, collections::HashMap};
 use lexer::Location;
-use crate::Parser;
-
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Op {

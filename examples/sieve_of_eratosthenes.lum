@@ -1,0 +1,17 @@
+tab = table(120);
+for( i in 0..120) {
+    tab[i] = 1;
+}
+for( i in 0..120) {
+  n = 1;
+  while (i*n < 120) {
+    tab[i*n] = 0;
+  }
+}
+print("Prime numbers < 120: ");
+for( i in 0..120) {
+  if(tab[i] == 1) {
+    print(i + {if(i<120) {', '} else {''});
+  }
+};
+0
