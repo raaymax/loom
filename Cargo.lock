@@ -220,6 +220,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "compiler"
+version = "0.1.0"
+dependencies = [
+ "lexer",
+ "parser",
+]
+
+[[package]]
 name = "dashmap"
 version = "5.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -438,6 +446,8 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 name = "loom"
 version = "0.1.0"
 dependencies = [
+ "cli",
+ "compiler",
  "interpreter",
  "lexer",
  "parser",

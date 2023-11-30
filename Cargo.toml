@@ -9,6 +9,7 @@ members = [
   "crates/lexer",
   "crates/parser",
   "crates/interpreter",
+  "crates/compiler",
   "bins/lsp",
   "bins/cli",
   "tree-sitter-loom",
@@ -19,5 +20,7 @@ members = [
 lexer = { path = "./crates/lexer" }
 parser = { path = "./crates/parser" }
 interpreter = { path = "./crates/interpreter" }
+compiler = { path = "./crates/compiler" }
+cli = { path = "./bins/cli" }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
