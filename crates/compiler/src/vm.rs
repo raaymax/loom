@@ -1,43 +1,5 @@
 use crate::OpCode;
 use lexer::PError;
-
-macro_rules! make_instr_set {
-    ($p:ident; $($inst:ident($($arg:ty),*; $c:expr; $($name:ident[$a:expr;$b:expr]),+; $($n:ident = $dec:expr),*)),+ ) => {
-        enum $p {
-            $(
-                $inst($($arg),*)
-            ),+
-        }
-        impl $p{
-            fn byte_description(&self) -> (u8, [u8;4]) {
-                match self {
-                    $(
-                        $p::$inst(..) => make_instr!($c; $($name[$a;$b]),+; $($n = $dec),*),
-                    )+
-                }
-            }
-        }
-    };
-}
-
-make_instr_set!(
-    Lum32;
-    Load(u8,u16; 4; op[29;24], target[23;16], val[15;0]; op = 0b11000001),
-    Load0(u8; 2; op[31;24], target[23;16]; op = 0b01000001),
-    Load1(u8; 2; op[31;24], target[23;16]; op = 0b01000010),
-    Exit(; 1; op[31;24]; op = 0b00000000),
-    Store(u8; 2; op[31;24], target[23;16]; op = 0b01000011)
-);
-
-
-enum Instr {
-    Load(u8,u16),
-    Load0(u8),
-    Load1(u8),
-    Store(u8),
-    Exit,
-}
-
 macro_rules! make_instr {
     ($c:expr; $($name:ident[$a:expr;$b:expr]),+; $($n:ident = $dec:expr),*) => {
         {
@@ -55,6 +17,55 @@ macro_rules! make_instr {
         }
     };
 }
+
+macro_rules! make_instr_set {
+    ($p:ident; $($inst:ident($($arg:ty),*; $c:expr; op[$a0:expr;$b0:expr] = $opv:expr; $($name:ident[$a:expr;$b:expr]),*; $($n:ident = $dec:expr),*)),+ ) => {
+        enum $p {
+            $(
+                $inst($($arg),*)
+            ),+
+        }
+        impl $p{
+            fn get_op(&self) -> u8 {
+                match self {
+                    $(
+                        $p::$inst(..) => $opv,
+                    )+
+                }
+            }
+
+            fn byte_description(self) -> (u8, [u8;4]) {
+                match self {
+                    $(
+                        $p::$inst($($name),*) => {
+                            let op = $opv;
+                            make_instr!($c; op[$a0;$b0], $($name[$a;$b]),*; $($n = $dec),*)
+                        },
+                    )+
+                }
+            }
+        }
+    };
+}
+
+make_instr_set!(
+    Lum32;
+    Load(u8,u16; 4; op[29;24]= 0b11000001; target[23;16], val[15;0];),
+    Load0(u8; 2; op[31;24] = 0b01000001; target[23;16];),
+    Load1(u8; 2; op[31;24] = 0b01000010; target[23;16];),
+    Exit(u8; 1; op[31;24] = 0b00000000; empty[1;0];),
+    Store(u8; 2; op[31;24] = 0b01000011; target[23;16];)
+);
+
+
+enum Instr {
+    Load(u8,u16),
+    Load0(u8),
+    Load1(u8),
+    Store(u8),
+    Exit,
+}
+
 /*
 macro_rules! make_instr_parser {
     ($fn_name:ident; $($name:ident[$a:expr;$b:expr]),+) => {
@@ -149,7 +160,7 @@ mod tests {
             {
                 let c = Instrs(vec![
                     $(
-                        Lum32::$x($($arg),*).byte_description()
+                        Lum32::$x$(($($arg),*))?.byte_description()
                     ),+
                 ]);
                 c.into()
@@ -171,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_code() {
-        let bytecode: Vec<u8> = code![Load(1,1), Load0(1), Load1(1), Exit];
+        let bytecode: Vec<u8> = code![Load(1,1), Load0(1), Load1(1), Exit(1)];
         assert_eq!(bytecode, vec![1,1,0,1,2,1,3,1,4]);
 
     }
@@ -179,7 +190,7 @@ mod tests {
     #[test]
     fn test_vm() {
         let mut vm = VM::new();
-        let bytes:Vec<u8> = code![Load(1,1), Load0(1), Load1(1), Exit];
+        let bytes:Vec<u8> = code![Load(1,1), Load0(1), Load1(1), Exit(1)];
         let result = vm.run(bytes);
         assert_eq!(result.unwrap(), 1);
     }
@@ -187,7 +198,7 @@ mod tests {
     #[test]
     fn test_stack_1() {
         let mut vm = VM::new();
-        let bytes:Vec<u8> = code![Load1(1), Store(1), Exit];
+        let bytes:Vec<u8> = code![Load1(1), Store(1), Exit(1)];
         let result = vm.run(bytes);
         assert_eq!(vm.stack, vec![1]);
     }
