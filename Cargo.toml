@@ -21,6 +21,7 @@ lexer = { path = "./crates/lexer" }
 parser = { path = "./crates/parser" }
 interpreter = { path = "./crates/interpreter" }
 compiler = { path = "./crates/compiler" }
+vm = { path = "./crates/vm" }
 cli = { path = "./bins/cli" }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -13,6 +13,7 @@ crate-type = ["lib"]
 [dependencies]
 enum-display = "0.1.3"
 lexer = { path =  "../lexer" }
+vm = { path =  "../vm" }
 num = "0.4.1"
 num-derive = "0.4.1"
 num-traits = "0.2.17"
