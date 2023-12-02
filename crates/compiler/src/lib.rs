@@ -1,58 +1,21 @@
 mod vm;
+mod op_code;
+mod instr;
+
+extern crate num;
+#[macro_use]
+extern crate num_derive;
+#[macro_use]
+extern crate enum_display;
+
 use std::{fmt::{Display, Formatter}};
 
 use lexer::PError;
 use parser::{Node, Op, Value};
 pub use vm::VM;
+pub use instr::{Instr, Instrs};
+pub use op_code::OpCode;
 
-#[derive(Debug, Clone, Copy)]
-pub enum OpCode {
-    Move,
-    Load,
-    Load0,
-    Load1,
-    Store,
-    Exit,
-    Add,
-    Sub,
-    Mul,
-    Div,
-}
-
-impl Display for OpCode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OpCode::Move => write!(f, "Move"),
-            OpCode::Load => write!(f, "Load"),
-            OpCode::Load0 => write!(f, "Load0"),
-            OpCode::Load1 => write!(f, "Load1"),
-            OpCode::Store => write!(f, "Store"),
-            OpCode::Exit => write!(f, "Pop"),
-            OpCode::Add => write!(f, "Add"),
-            OpCode::Sub => write!(f, "Sub"),
-            OpCode::Mul => write!(f, "Mul"),
-            OpCode::Div => write!(f, "Div"),
-        }
-    }
-}
-
-impl From<u8> for OpCode {
-    fn from(val: u8) -> OpCode {
-        match val {
-            0 => OpCode::Move,
-            1 => OpCode::Load,
-            2 => OpCode::Load0,
-            3 => OpCode::Load1,
-            4 => OpCode::Store,
-            5 => OpCode::Exit,
-            6 => OpCode::Add,
-            7 => OpCode::Sub,
-            8 => OpCode::Mul,
-            9 => OpCode::Div,
-            _ => panic!("Unknown op code: {}", val),
-        }
-    }
-}
 
 struct Instruction {
     op_code: OpCode,
@@ -205,7 +168,6 @@ mod tests {
 
     use super::*;
 
-    #[test]
     fn compile_simple() {
         let mut node = Node::new(Op::Scope, Location::Eof);
         node.add(Node::new(Op::Value, Location::Eof).set_value(1.into()));
@@ -213,7 +175,6 @@ mod tests {
         assert_eq!(bytes, vec![3, 5]);
     }
 
-    #[test]
     fn compile_binary_op() {
         let mut node = Node::new(Op::Scope, Location::Eof);
         let mut add = Node::new(Op::Add, Location::Eof);

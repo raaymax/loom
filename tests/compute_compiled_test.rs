@@ -20,8 +20,8 @@ macro_rules! test_return_code{
                 panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
 
-            let mut vm = compiler::VM::new();
-            let val = vm.run(bytes).unwrap_or_else(|e| {
+            let mut vm = compiler::VM::new(bytes);
+            let val = vm.run().unwrap_or_else(|e| {
                 panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             assert_eq!(val, $o);
