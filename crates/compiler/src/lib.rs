@@ -1,10 +1,12 @@
+mod vm;
 use std::{fmt::{Display, Formatter}};
 
 use lexer::PError;
 use parser::{Node, Op, Value};
+pub use vm::VM;
 
 #[derive(Debug, Clone, Copy)]
-enum OpCode {
+pub enum OpCode {
     Move,
     Load,
     Load0,
@@ -194,41 +196,6 @@ pub fn compile(node: &Node) -> Result<Vec<u8>, PError> {
     bytes.extend_from_slice(&code);
     bytes.extend_from_slice(&mem);
     Ok(bytes)
-}
-
-pub struct VM {
-    regs: Vec<u32>,
-    stack: Vec<u32>,
-    pc: usize,
-}
-
-
-impl VM {
-    pub fn new() -> VM {
-        VM {
-            regs: Vec::new(),
-            stack: Vec::new(),
-            pc: 0,
-        }
-    }
-    pub fn run(&mut self, bytes: Vec<u8>) -> Result<u32, PError> {
-        let byte = bytes[self.pc];
-
-        let op_code = OpCode::from(byte);
-        match op_code {
-            OpCode::Load1 => {
-                self.regs[0] = 1;
-            },
-            OpCode::Exit => {
-                return Ok(self.regs[0]);
-            },
-            _ => {
-                panic!("Unknown op code: {}", op_code);
-            }
-        }
-        
-        Ok(0)
-    }
 }
 
 #[cfg(test)]
