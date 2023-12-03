@@ -2,56 +2,11 @@ use std::{fmt::{Display, Formatter}};
 
 use lexer::PError;
 use parser::{Node, Op, Value};
-use vm::OpCode;
-
-struct Instruction {
-    op_code: OpCode,
-    arg0: Option<u8>,
-    arg1: Option<u8>,
-    arg2: Option<u8>,
-}
-
-
-impl Instruction {
-    pub fn new(op_code: OpCode) -> Instruction {
-        Instruction {
-            op_code,
-            arg0: None,
-            arg1: None,
-            arg2: None,
-        }
-    }
-    pub fn with_arg0(mut self, arg0: u8) -> Instruction {
-        self.arg0 = Some(arg0);
-        self
-    }
-    pub fn with_arg1(mut self, arg1: u8) -> Instruction {
-        self.arg1 = Some(arg1);
-        self
-    }
-    pub fn with_arg2(mut self, arg2: u8) -> Instruction {
-        self.arg2 = Some(arg2);
-        self
-    }
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        bytes.push(self.op_code as u8);
-        if let Some(arg0) = self.arg0 {
-            bytes.push(arg0);
-        }
-        if let Some(arg1) = self.arg1 {
-            bytes.push(arg1);
-        }
-        if let Some(arg2) = self.arg2 {
-            bytes.push(arg2);
-        }
-        bytes
-    }
-}
+use vm::{Instr, Instrs, OpCode};
 
 
 struct Code {
-    code: Vec<Instruction>,
+    code: Vec<Instr>,
 }
 
 impl Code {
@@ -60,11 +15,11 @@ impl Code {
             code: Vec::new(),
         }
     }
-    pub fn push(&mut self, inst: Instruction) {
+    pub fn push(&mut self, inst: Instr) {
         self.code.push(inst);
     }
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.code.iter().flat_map(|i| i.to_bytes()).collect::<Vec<_>>()
+        Instrs(self.code.iter().map(|c| c.byte_description()).collect()).into()
     }
 }
 
@@ -104,18 +59,24 @@ pub fn compile_node(node: &Node, mut consts: &mut Mem, inst: &mut Code) -> Resul
     match node.op {
         Op::Add => {
             compile_node(&node.children[0], &mut consts, inst)?;
+            inst.push(Instr::Mov(2, 0));
             compile_node(&node.children[1], &mut consts, inst)?;
-            inst.push(Instruction::new(OpCode::Add));
+            inst.push(Instr::Mov(1, 0));
+            inst.push(Instr::Add(0,1,2));
+        },
+        Op::Sub => {
+            compile_node(&node.children[0], &mut consts, inst)?;
+            inst.push(Instr::Mov(2, 0));
+            compile_node(&node.children[1], &mut consts, inst)?;
+            inst.push(Instr::Mov(1, 0));
+            inst.push(Instr::Sub(0,2,1));
         },
         Op::Value => {
             match &node.value {
-                Some(Value::Number(0)) => inst.push(Instruction::new(OpCode::Load0)),
-                Some(Value::Number(1)) => inst.push(Instruction::new(OpCode::Load1)),
+                Some(Value::Number(0)) => inst.push(Instr::Load0(0)),
+                Some(Value::Number(1)) => inst.push(Instr::Load1(0)),
                 Some(Value::Number(val)) => {
-                    let addr = consts.write(*val as u32);
-                    if addr < 256 {
-                        inst.push(Instruction::new(OpCode::Load).with_arg0(addr.try_into().unwrap()));
-                    }
+                    inst.push(Instr::Load(0, *val as u16));
                 },
                 Some(..) => {
                     panic!("Unknown value: {}", node);
@@ -123,14 +84,15 @@ pub fn compile_node(node: &Node, mut consts: &mut Mem, inst: &mut Code) -> Resul
                 None => panic!("No value"),
             }
         },
-        Op::Scope => {
+        Op::Scope | Op::Paren => {
             for child in &node.children {
+                println!("child: {}", child.op);
                 compile_node(child, &mut consts, inst)?;
             }
-            inst.push(Instruction::new(OpCode::Exit));
+            inst.push(Instr::Exit);
         },
         _ => {
-            panic!("Unknown op: {}", node);
+            panic!("Unknown op: {} {}", node, node.op);
         }
     }
     Ok(())
@@ -141,11 +103,7 @@ pub fn compile(node: &Node) -> Result<Vec<u8>, PError> {
     let mut consts = Mem::new();
     compile_node(node, &mut consts, &mut inst)?;
     let code = inst.to_bytes();
-    let mem = consts.to_bytes();
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(&code);
-    bytes.extend_from_slice(&mem);
-    Ok(bytes)
+    Ok(code)
 }
 
 #[cfg(test)]
@@ -155,21 +113,13 @@ mod tests {
 
     use super::*;
 
+    #[test]
     fn compile_simple() {
         let mut node = Node::new(Op::Scope, Location::Eof);
         node.add(Node::new(Op::Value, Location::Eof).set_value(1.into()));
         let bytes = compile(&node).unwrap();
-        assert_eq!(bytes, vec![3, 5]);
+        assert_eq!(bytes, vec![OpCode::Load1.into(), 0, OpCode::Exit.into()]);
     }
 
-    fn compile_binary_op() {
-        let mut node = Node::new(Op::Scope, Location::Eof);
-        let mut add = Node::new(Op::Add, Location::Eof);
-        add.add(Node::new(Op::Value, Location::Eof).set_value(1.into()));
-        add.add(Node::new(Op::Value, Location::Eof).set_value(2.into()));
-        node.add(add);
-        let bytes = compile(&node).unwrap();
-        assert_eq!(bytes, vec![3, 2, 0, 6, 5]);
-    }
 }
 

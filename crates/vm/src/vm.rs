@@ -60,7 +60,7 @@ impl VM {
     pub fn new(prog: Vec<u8>) -> VM {
         VM {
             prog,
-            regs: vec![0; 32],
+            regs: vec![0; 16],
             stack: Vec::new(),
             pc: 0,
         }
@@ -79,6 +79,7 @@ impl VM {
         while let Some(inst) = self.next() {
             xx -= 1;
             if xx < 0 {break;}
+            println!("regs: {:?}", self.regs);
             println!("inst: {}", inst);
             match inst {
                 Instr::Sub(target, v1, v2) => {

@@ -169,7 +169,6 @@ impl Instr {
             bytes[i] = data[pc+i];
         }
 
-        println!("val: {:?}", bytes);
         let val = u32::from_be_bytes(bytes.try_into().unwrap());
         match code {
             OpCode::Load => parse_instr!(val; tr value -> Load),
