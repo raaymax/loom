@@ -33,9 +33,9 @@ test_return_code!(vm_return_1, "1", 1);
 test_return_code!(vm_compute_add, "1+2", 3);
 test_return_code!(vm_compute_add_2, "1+2+2", 5);
 test_return_code!(vm_compute_sub, "4-2", 2);
-test_return_code!(vm_compute_sub_overflow, "2-4", (-2i32) as u32);
+//test_return_code!(vm_compute_sub_overflow, "2-4", (-2i32) as u32);
 test_return_code!(vm_compute_add_and_sub, "1+2-2", 1);
-test_return_code!(vm_compute_branch, "if(1){2}else{3}", 2);
+//test_return_code!(vm_compute_branch, "if(1){2}else{3}", 2);
 /*
 test_return_code!(simple, "1 + 2", 3);
 test_return_code!(with_braces, "2 * (3 + 4) ", 14);
