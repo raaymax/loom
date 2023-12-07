@@ -15,8 +15,12 @@ impl Code {
             code: Vec::new(),
         }
     }
-    pub fn push(&mut self, inst: Instr) {
+    pub fn push(&mut self, inst: Instr) -> usize {
         self.code.push(inst);
+        self.code.len() - 1
+    }
+    pub fn append(&mut self, code: Code) {
+        self.code.extend(code.code);
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         Instrs(self.code.iter().map(|c| c.byte_description()).collect()).into()
@@ -55,71 +59,118 @@ impl Display for Mem {
     }
 }
 
-pub fn compile_node(node: &Node, mut consts: &mut Mem, inst: &mut Code) -> Result<(), PError> {
-    match node.op {
-        Op::Add => {
-            compile_node(&node.children[0], &mut consts, inst)?;
-            inst.push(Instr::Mov(2, 0));
-            compile_node(&node.children[1], &mut consts, inst)?;
-            inst.push(Instr::Mov(1, 0));
-            inst.push(Instr::Add(0,1,2));
-        },
-        Op::Sub => {
-            compile_node(&node.children[0], &mut consts, inst)?;
-            inst.push(Instr::Mov(2, 0));
-            compile_node(&node.children[1], &mut consts, inst)?;
-            inst.push(Instr::Mov(1, 0));
-            inst.push(Instr::Sub(0,2,1));
-        },
-        Op::Value => {
-            match &node.value {
-                Some(Value::Number(0)) => inst.push(Instr::Load0(0)),
-                Some(Value::Number(1)) => inst.push(Instr::Load1(0)),
-                Some(Value::Number(val)) => {
-                    inst.push(Instr::Load(0, *val as u16));
-                },
-                Some(..) => {
-                    panic!("Unknown value: {}", node);
-                },
-                None => panic!("No value"),
-            }
-        },
-        Op::Scope | Op::Paren => {
-            for child in &node.children {
-                println!("child: {}", child.op);
-                compile_node(child, &mut consts, inst)?;
-            }
-            inst.push(Instr::Exit);
-        },
-        _ => {
-            panic!("Unknown op: {} {}", node, node.op);
+
+struct Stack {
+    stackptr: usize,
+}
+
+impl Stack {
+    pub fn new() -> Stack {
+        Stack {
+            stackptr: 0,
         }
     }
-    Ok(())
-}
-
-pub fn compile(node: &Node) -> Result<Vec<u8>, PError> {
-    let mut inst = Code::new();
-    let mut consts = Mem::new();
-    compile_node(node, &mut consts, &mut inst)?;
-    let code = inst.to_bytes();
-    Ok(code)
-}
-
-#[cfg(test)]
-mod tests {
-    use parser::Node;
-    use lexer::Location;
-
-    use super::*;
-
-    #[test]
-    fn compile_simple() {
-        let mut node = Node::new(Op::Scope, Location::Eof);
-        node.add(Node::new(Op::Value, Location::Eof).set_value(1.into()));
-        let bytes = compile(&node).unwrap();
-        assert_eq!(bytes, vec![OpCode::Load1.into(), 0, OpCode::Exit.into()]);
+    pub fn push(&mut self, val: u32) -> usize {
+        let location = self.stackptr;
+        self.stackptr += 4;
+        location
     }
-
+    pub fn pop(&mut self) {
+        self.stackptr -= 4;
+    }
 }
 
+pub struct StackLocation {
+    address: usize,
+    size: usize,
+}
+
+pub struct Compiler {
+    stack: Stack,
+    mem: Mem,
+    code: Code,
+}
+
+impl Compiler {
+    pub fn new() -> Compiler {
+        Compiler {
+            stack: Stack::new(),
+            mem: Mem::new(),
+            code: Code::new(),
+        }
+    }
+    pub fn compile_node(&mut self, node: &Node) -> Result<Code, PError> {
+        match node.op {
+            Op::Add => {
+                let mut code = Code::new();
+                code.append(self.compile_node(&node.children[0])?);
+                code.append(self.compile_node(&node.children[1])?);
+                code.push(Instr::Pop(1));
+                code.push(Instr::Pop(2));
+                code.push(Instr::Add(0,1,2));
+                code.push(Instr::Push(0));
+                Ok(code)
+            },
+            Op::Sub => {
+                let mut code = Code::new();
+                code.append(self.compile_node(&node.children[0])?);
+                code.append(self.compile_node(&node.children[1])?);
+                code.push(Instr::Pop(1));
+                code.push(Instr::Pop(2));
+                code.push(Instr::Sub(0,2,1));
+                Ok(code)
+            },
+            Op::Value => {
+                let mut code = Code::new();
+                match &node.value {
+                    Some(Value::Number(0)) => code.push(Instr::Load0(0)),
+                    Some(Value::Number(1)) => code.push(Instr::Load1(0)),
+                    Some(Value::Number(val)) => {
+                        code.push(Instr::Load(0, *val as u16))
+                    },
+                    Some(..) => {
+                        panic!("Unknown value: {}", node)
+                    },
+                    None => panic!("No value"),
+                };
+                code.push(Instr::Push(0));
+                Ok(code)
+            },
+            Op::Branch => {
+                let mut code = Code::new();
+                code.append(self.compile_node(&node.children[0])?);
+                code.push(Instr::Pop(1));
+                code.push(Instr::Load0(0));
+                let thenBody = self.compile_node(&node.children[1])?;
+                let elseBody = self.compile_node(&node.children[2])?;
+                let jmp = Instr::Jmp((elseBody.code.len() as u16 + 1) as i32);
+                code.push(Instr::Beq(0, 1, thenBody.code.len() as i16 + jmp.size() as i16));
+                code.append(thenBody);
+                code.push(jmp);
+                code.append(elseBody);
+                Ok(code)
+            },
+            Op::Paren => {
+                self.compile_node(node.left().unwrap())
+            },
+            Op::Scope => {
+                let mut code = Code::new();
+                for child in &node.children {
+                    println!("child: {}", child.op);
+                    code.append(self.compile_node(child)?);
+                }
+                Ok(code)
+            },
+            _ => {
+                panic!("Unknown op: {} {}", node, node.op);
+            }
+        }
+    }
+    pub fn compile(&mut self, node: &Node) -> Result<Vec<u8>, PError> {
+        let code = self.compile_node(node)?;
+        self.code.append(code);
+        self.code.push(Instr::Exit);
+        let code = self.code.to_bytes();
+        Ok(code)
+    }
+}

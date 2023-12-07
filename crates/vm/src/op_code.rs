@@ -13,6 +13,7 @@ pub enum OpCode {
     Beq   = 0b11001010,
     Bne   = 0b11001011,
     Jmp   = 0b11001100,
+    Movs  = 0b11001101,
 
     Mov   = 0b10000001,
     Not   = 0b10000010,
@@ -20,8 +21,11 @@ pub enum OpCode {
     Load0 = 0b01000001,
     Load1 = 0b01000010,
     Store = 0b01000011,
+    Push  = 0b01000100,
+    Pop   = 0b01000101,
 
     Exit  = 0b00000000,
+
 
 }
 

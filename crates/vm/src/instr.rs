@@ -105,6 +105,9 @@ pub enum Instr {
     Beq(u8,u8,i16),
     Bne(u8,u8,i16),
     Jmp(i32),
+    Push(u8),
+    Pop(u8),
+    Movs(u8, u16),
 }
 
 impl From<&Instr> for OpCode {
@@ -128,6 +131,9 @@ impl From<&Instr> for OpCode {
             Instr::Beq(..) => OpCode::Beq,
             Instr::Bne(..) => OpCode::Bne,
             Instr::Jmp(..) => OpCode::Jmp,
+            Instr::Push(..) => OpCode::Push,
+            Instr::Pop(..) => OpCode::Pop,
+            Instr::Movs(..) => OpCode::Movs,
         }
     }
 }
@@ -153,6 +159,9 @@ impl Instr {
             Instr::Beq(r1,r2,addr) => make_instr!(4; op[31;24], r1[23;20], r2[19;16], addr[15;0]; op = OpCode::Beq),
             Instr::Bne(r1,r2,addr) => make_instr!(4; op[31;24], r1[23;20], r2[19;16], addr[15;0]; op = OpCode::Bne),
             Instr::Jmp(addr) => make_instr!(4; op[31;24], addr[23;0]; op = OpCode::Jmp),
+            Instr::Push(tr) => make_instr!(2; op[31;24], tr[23;16]; op = OpCode::Push),
+            Instr::Pop(tr) => make_instr!(2; op[31;24], tr[23;16]; op = OpCode::Pop),
+            Instr::Movs(tr, val) => make_instr!(4; op[31;24], tr[23;16], val[15;0]; op = OpCode::Movs),
         }
     }
 
@@ -189,6 +198,9 @@ impl Instr {
             OpCode::Beq=> parse_instr!(val; r1 r2 addr -> Beq),
             OpCode::Bne=> parse_instr!(val; r1 r2 addr -> Bne),
             OpCode::Jmp=> parse_instr!(val; adr -> Jmp),
+            OpCode::Push=> parse_instr!(val; tr -> Push),
+            OpCode::Pop=> parse_instr!(val; tr -> Pop),
+            OpCode::Movs=> parse_instr!(val; tr value -> Movs),
         }
     }
 
@@ -218,6 +230,9 @@ impl Display for Instr {
             Instr::Beq(r1,r2,addr) => write!(f, "Beq r{} r{} {}", r1, r2, addr),
             Instr::Bne(r1,r2,addr) => write!(f, "Bne r{} r{} {}", r1, r2, addr),
             Instr::Jmp(val) => write!(f, "Jmp {}", val),
+            Instr::Push(tr) => write!(f, "Push r{}", tr),
+            Instr::Pop(tr) => write!(f, "Pop r{}", tr),
+            Instr::Movs(tr, val) => write!(f, "Movs r{} {}", tr, val),
         }
     }
 }
@@ -274,4 +289,7 @@ mod tests {
     check_instr!(bne; Bne(1,2,3); 4);
     check_instr!(jmp; Jmp(3); 4);
     check_instr!(jmp_negative; Jmp(-3); 4);
+    check_instr!(push; Push(1); 2);
+    check_instr!(pop; Pop(1); 2);
+    check_instr!(movs; Movs(1,2); 4);
 }

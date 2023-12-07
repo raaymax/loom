@@ -68,6 +68,8 @@ impl VM {
 
 
     fn next(&mut self) -> Option<Instr> {
+        println!("next: {} {:?} size: {}", self.pc, Instr::from_bytes(&self.prog, self.pc), Instr::from_bytes(&self.prog, self.pc).unwrap().size());
+
         Instr::from_bytes(&self.prog, self.pc).map(|i| {
             self.pc += i.size();
             i
@@ -75,12 +77,17 @@ impl VM {
     }
 
     pub fn run(&mut self) -> Result<u32, PError> {
-        let mut xx = 10;
+        let mut pc = 0;
+        println!("prog len: {}", self.prog.len());
+        while pc < self.prog.len() {
+            let Some(inst) = Instr::from_bytes(&self.prog, pc) else {
+                break;
+            };
+            println!("{}: {}", pc, inst);
+            pc += inst.size();
+        }
         while let Some(inst) = self.next() {
-            xx -= 1;
-            if xx < 0 {break;}
-            println!("regs: {:?}", self.regs);
-            println!("inst: {}", inst);
+            println!("inst: {} {}", self.pc - inst.size(), inst);
             match inst {
                 Instr::Sub(target, v1, v2) => {
                     self.regs[target as usize] = self.regs[v1 as usize] - self.regs[v2 as usize];
@@ -117,7 +124,7 @@ impl VM {
                     self.regs[target as usize] = 1;
                 },
                 Instr::Exit => {
-                    println!("{}", self);
+                    println!("Exit: {}", self);
                     return Ok(self.regs[0]);
                 },
                 Instr::Mov(target, v1) => {
@@ -137,12 +144,23 @@ impl VM {
                         self.pc = adr as usize;
                     }
                 },
+                Instr::Push(r1) => {
+                    self.stack.push(self.regs[r1 as usize]);
+                },
+                Instr::Pop(r1) => {
+                    self.regs[r1 as usize] = self.stack.pop().unwrap();
+                },
+                Instr::Movs(r1, sp) => {
+                    self.regs[r1 as usize] = self.stack[sp as usize];
+                },
                 _ => {
                     panic!("Unknown op code: {}", inst.op_code());
                 }
             }
+            println!("regs: {:?}", self.regs);
+            println!("stack: {:?}\n", self.stack);
         }
-        
+        println!("{}", self.pc);
         Ok(0)
     }
 }
@@ -292,5 +310,14 @@ mod tests {
         let mut vm = VM::new(bytes);
         let result = vm.run();
         assert_eq!(result.unwrap(), 1);
+    }
+
+    #[test]
+    fn push_pop() {
+        let bytes:Vec<u8> = code![Load(1, 7), Push(1), Pop(0), Exit];
+        println!("{:?}", bytes);
+        let mut vm = VM::new(bytes);
+        let result = vm.run();
+        assert_eq!(result.unwrap(), 7);
     }
 }

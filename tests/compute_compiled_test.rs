@@ -16,7 +16,7 @@ macro_rules! test_return_code{
                 panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             println!("{}", node);
-            let bytes = compiler::compile(&node).unwrap_or_else(|e| {
+            let bytes = compiler::Compiler::new().compile(&node).unwrap_or_else(|e| {
                 panic!("\nError:\n{}\n", e.format_error($i, "file.lum", false));
             });
             println!("{:?}", bytes);
@@ -33,6 +33,8 @@ test_return_code!(vm_return_1, "1", 1);
 test_return_code!(vm_compute_add, "1+2", 3);
 test_return_code!(vm_compute_add_2, "1+2+2", 5);
 test_return_code!(vm_compute_sub, "4-2", 2);
+test_return_code!(vm_compute_complex, "(1+5)-(2+2)", 2);
+test_return_code!(vm_compute_if, "if(1){2}else{3}", 2);
 //test_return_code!(vm_compute_sub_overflow, "2-4", (-2i32) as u32);
 test_return_code!(vm_compute_add_and_sub, "1+2-2", 1);
 //test_return_code!(vm_compute_branch, "if(1){2}else{3}", 2);
