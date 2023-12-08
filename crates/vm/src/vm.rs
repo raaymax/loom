@@ -120,6 +120,9 @@ impl VM {
                 Instr::Load(target, val) => {
                     self.regs[target as usize] = val as u32;
                 },
+                Instr::Load0(target) => {
+                    self.regs[target as usize] = 0;
+                },
                 Instr::Load1(target) => {
                     self.regs[target as usize] = 1;
                 },
@@ -131,12 +134,11 @@ impl VM {
                     self.regs[target as usize] = self.regs[v1 as usize];
                 },
                 Instr::Jmp(adr) => {
-                    println!("Jmp {}", adr);
-                    self.pc = adr as usize;
+                    self.pc += adr as usize;
                 },
                 Instr::Beq(r1, r2, adr) => {
                     if self.regs[r1 as usize] == self.regs[r2 as usize] {
-                        self.pc = adr as usize;
+                        self.pc += adr as usize;
                     }
                 },
                 Instr::Bne(r1, r2, adr) => {
@@ -298,14 +300,14 @@ mod tests {
     }
     #[test]
     fn beq_pos() {
-        let bytes:Vec<u8> = code![Load(1, 7), Load(0,7), Beq(0,1,16), Add(0,0,1), Exit];
+        let bytes:Vec<u8> = code![Load(1, 7), Load(0,7), Beq(0,1,4), Add(0,0,1), Exit];
         let mut vm = VM::new(bytes);
         let result = vm.run();
         assert_eq!(result.unwrap(), 7);
     }
     #[test]
     fn jmp() {
-        let bytes:Vec<u8> = code![Load(1, 7), Load(0,1), Jmp(16), Add(0,0,1), Exit];
+        let bytes:Vec<u8> = code![Load(1, 7), Load(0,1), Jmp(4), Add(0,0,1), Exit];
         println!("{:?}", bytes);
         let mut vm = VM::new(bytes);
         let result = vm.run();

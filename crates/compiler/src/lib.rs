@@ -25,6 +25,10 @@ impl Code {
     pub fn to_bytes(&self) -> Vec<u8> {
         Instrs(self.code.iter().map(|c| c.byte_description()).collect()).into()
     }
+
+    pub fn size(&self) -> usize {
+        self.code.iter().map(|c| c.size()).sum()
+    }
 }
 
 struct Mem {    
@@ -141,13 +145,14 @@ impl Compiler {
                 code.append(self.compile_node(&node.children[0])?);
                 code.push(Instr::Pop(1));
                 code.push(Instr::Load0(0));
-                let thenBody = self.compile_node(&node.children[1])?;
-                let elseBody = self.compile_node(&node.children[2])?;
-                let jmp = Instr::Jmp((elseBody.code.len() as u16 + 1) as i32);
-                code.push(Instr::Beq(0, 1, thenBody.code.len() as i16 + jmp.size() as i16));
-                code.append(thenBody);
+                let then_body = self.compile_node(&node.children[1])?;
+                let else_body = self.compile_node(&node.children[2])?;
+                let jmp = Instr::Jmp((else_body.size() as u16) as i32);
+                println!("thenBody: {} {}", then_body.size(), jmp.size());
+                code.push(Instr::Beq(0, 1, then_body.size() as i16 + jmp.size() as i16));
+                code.append(then_body);
                 code.push(jmp);
-                code.append(elseBody);
+                code.append(else_body);
                 Ok(code)
             },
             Op::Paren => {
