@@ -1,3 +1,4 @@
+//mod code;
 use std::{fmt::{Display, Formatter}};
 
 use lexer::PError;
@@ -84,9 +85,11 @@ impl Stack {
     }
 }
 
-pub struct StackLocation {
-    address: usize,
-    size: usize,
+pub enum Addr {
+    Mem(usize),
+    MemPlaceholder(String),
+    Stack(usize),
+    StackPlaceholder(String),
 }
 
 pub struct Compiler {
@@ -153,6 +156,26 @@ impl Compiler {
                 code.append(then_body);
                 code.push(jmp);
                 code.append(else_body);
+                Ok(code)
+            },
+            Op::While => {
+                let mut code = Code::new();
+                let mut condition = self.compile_node(&node.children[0])?;
+                let body = self.compile_node(&node.children[1])?;
+                condition.push(Instr::Pop(1));
+                condition.push(Instr::Load0(0));
+                let beq = Instr::Beq(0, 1, body.size() as i16);
+                let jmp = Instr::Jmp(-(condition.size() as i32+ beq.size() as i32 + body.size() as i32));
+                code.append(condition);
+                code.push(beq);
+                code.append(body);
+                code.push(jmp);
+                Ok(code)
+            },
+            Op::Assign => {
+                let mut code = Code::new();
+                code.append(self.compile_node(node.right().unwrap())?);
+                code.push(Instr::Pop(1));
                 Ok(code)
             },
             Op::Paren => {

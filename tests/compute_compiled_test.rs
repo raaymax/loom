@@ -37,6 +37,8 @@ test_return_code!(vm_compute_complex, "(1+5)-(2+2)", 2);
 test_return_code!(vm_compute_if0, "if(0){2}else{3}", 3);
 test_return_code!(vm_compute_if1, "if(1){2}else{3}", 2);
 test_return_code!(vm_compute_if2, "if(2){2}else{3}", 2);
+test_return_code!(vm_compute_assign, "i=7", 7);
+//test_return_code!(vm_compute_while, "i=0; while(i<2){i = i +1; i}", 2);
 //test_return_code!(vm_compute_sub_overflow, "2-4", (-2i32) as u32);
 test_return_code!(vm_compute_add_and_sub, "1+2-2", 1);
 //test_return_code!(vm_compute_branch, "if(1){2}else{3}", 2);

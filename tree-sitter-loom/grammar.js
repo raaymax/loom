@@ -29,8 +29,15 @@ module.exports = grammar({
         $.choice,
         $.while,
         $.return,
+        $.define,
       ),
       optional(';')
+    ),
+
+    define: $ => seq(
+      'let',
+      $.identifier,
+      optional(seq('=', $._expression))
     ),
 
     return: $ => seq(

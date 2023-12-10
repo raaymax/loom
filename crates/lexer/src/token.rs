@@ -35,6 +35,7 @@ pub enum Token {
     Gt(Location),
     Geq(Location),
     Return(Location),
+    Let(Location),
 }
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -72,6 +73,7 @@ impl Display for Token {
             Token::Gt(pos) => write!(f, "Gt {}", pos),
             Token::Geq(pos) => write!(f, "Geq {}", pos),
             Token::Return(pos) => write!(f, "Return {}", pos),
+            Token::Let(pos) => write!(f, "Let {}", pos),
         }
     }
 }
@@ -112,6 +114,7 @@ impl Token {
             Token::Gt(pos) => *pos,
             Token::Geq(pos) => *pos,
             Token::Return(pos) => *pos,
+            Token::Let(pos) => *pos,
         }
     }
 
@@ -139,7 +142,8 @@ impl Token {
                  | Token::While(..)
                  | Token::Loop(..)
                  | Token::Fn(..)
-                 | Token::Return(..))
+                 | Token::Return(..)
+                 | Token::Let(..))
     }
 
     pub fn is_noun(&self) -> bool {

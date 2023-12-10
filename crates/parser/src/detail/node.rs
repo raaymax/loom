@@ -23,6 +23,7 @@ pub enum Op {
     Call,
     While,
     DefineFunc,
+    DefineVar,
     Return,
     Leq,
     Lt,
@@ -34,6 +35,7 @@ impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Scope => 0,
+            Op::DefineVar => 6,
             Op::Return => 6,
             Op::Branch => 6,
             Op::Loop => 6,
@@ -88,6 +90,7 @@ impl Display for Op {
             Op::While => write!(f, "while"),
             Op::DefineFunc => write!(f, "Fn"),
             Op::Return => write!(f, "return"),
+            Op::DefineVar => write!(f, "let"),
         }
     }
 }
@@ -136,10 +139,11 @@ impl Node {
         self
     }
     pub fn set_id(mut self, id: String) -> Self {
-        if Op::Variable != self.op {
+        if matches!(self.op, Op::Variable | Op::DefineVar) {
+            self.id = Some(id);
+        } else {
             panic!("Cannot set id on non-var node");
         }
-        self.id = Some(id);
         self
     }
 
@@ -170,7 +174,7 @@ impl Node {
     pub fn add(&mut self, node: Node) {
         //println!("self: {} << {}", self, node);
         match self.op {
-            Op::Call => {
+            Op::Call | Op::DefineVar => {
                 self.children.insert(0, node);
             }
             Op::Scope | Op::Branch | Op::Args | Op::Not | Op::While | Op::DefineFunc | Op::Return => {
@@ -334,6 +338,12 @@ impl Display for Node {
                    write!(f,"{}", OptionalNode(Some(child)))?;
                 }
                 if self.children.len() != 1 { write!(f,")")? };
+            },
+            Op::DefineVar => {
+                if self.children.len() < 1 { 
+                    return write!(f,"let {}",self.id.as_ref().unwrap() )
+                };
+                write!(f,"let {}; {}", self.id.as_ref().unwrap(), OptionalNode(self.children.get(0)))?;
             },
             _ => write!(f,"N/A")?, 
         }

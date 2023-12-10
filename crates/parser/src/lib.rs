@@ -1,5 +1,4 @@
-mod value;
-mod node;
+mod detail;
 mod block;
 mod expr;
 mod branch;
@@ -8,15 +7,13 @@ mod r#loop;
 mod args;
 mod func;
 mod params;
+mod define;
 
 use std::slice::Iter;
 
 use lexer::{Token, PError};
 
-pub use value::Value;
-pub use self::node::{Node, Op};
-
-
+pub use detail::*;
 pub use block::Block;
 pub use expr::Expression;
 pub use branch::Branch;
@@ -25,6 +22,7 @@ pub use r#loop::Loop;
 pub use args::Args;
 pub use func::Func;
 pub use params::Params;
+pub use define::Define;
 
 trait Parser {
     fn consume(token: &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError>;
@@ -109,6 +107,13 @@ mod tests {
         LBrace(), RBrace(), Semi(),
         LBrace(), RBrace(), Semi(),
         LBrace(), RBrace()
+    ]);
+    test_ast_expr!(ast_define_variable_uninitializer, "{let a;()}", [
+        Let(), Id("a".to_string()),  Semi()
+    ]);
+    test_ast_expr!(ast_define_variable, "{let a; (a = 2);()}", [
+        Let(), Id("a".to_string()), Assign(),
+        Number(2), Semi()
     ]);
     #[test]
     fn test_return_of_expr() {

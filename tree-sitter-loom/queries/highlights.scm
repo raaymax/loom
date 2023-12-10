@@ -3,6 +3,7 @@
 "return" @keyword
 "if" @keyword
 "else" @keyword
+"let" @keyword
 "==" @operator
 "+" @operator
 "-" @operator

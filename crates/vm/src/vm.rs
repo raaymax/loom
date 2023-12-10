@@ -46,6 +46,7 @@ pub struct VM {
     regs: Vec<u32>,
     stack: Vec<u32>,
     pc: usize,
+    fp: usize,
 }
 
 impl Display for VM {
@@ -62,7 +63,8 @@ impl VM {
             prog,
             regs: vec![0; 16],
             stack: Vec::new(),
-            pc: 0,
+            pc: 0, // program counter
+            fp: 0, // frame pointer
         }
     }
 
@@ -153,7 +155,7 @@ impl VM {
                     self.regs[r1 as usize] = self.stack.pop().unwrap();
                 },
                 Instr::Movs(r1, sp) => {
-                    self.regs[r1 as usize] = self.stack[sp as usize];
+                    self.regs[r1 as usize] = self.stack[self.fp + sp as usize];
                 },
                 _ => {
                     panic!("Unknown op code: {}", inst.op_code());

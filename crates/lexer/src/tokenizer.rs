@@ -35,6 +35,7 @@ impl<'a> Tokenizer<'a> {
                     "while" => return Ok(Token::While(p.set_range(size))),
                     "if" => return Ok(Token::If(p.set_range(size))),
                     "fn" => return Ok(Token::Fn(p.set_range(size))),
+                    "let" => return Ok(Token::Let(p.set_range(size))),
                     "else" => return Ok(Token::Else(p.set_range(size))),
                     "loop" => return Ok(Token::Loop(p.set_range(size))),
                     "break" => return Ok(Token::Break(p.set_range(size))),

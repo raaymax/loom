@@ -1,6 +1,6 @@
 use std::slice::Iter;
 use lexer::{Location,Token, PError};
-use super::{Node, Op, Block, Branch, Call, Loop, Func};
+use super::{Node, Op, Block, Branch, Call, Loop, Func, Define};
 use crate::Parser;
 
 enum ExpressionState {
@@ -99,6 +99,15 @@ impl Parser for Expression {
                                 ret.add(expr);
                                 tree.add(ret);
                                 return Ok((tree, tok));
+                            },
+                            Token::Let(..) => {
+                                let (block, tok) = Define::consume(token, iter)?;
+                                if let Some(Token::Semi(..)) = tok {
+                                    tree.add(block);
+                                    return Ok((tree, tok));
+                                } else {
+                                    return Err(PError::new(Location::Eof, format!("Unexpected end of file, semicolon not found {}", token.get_location()).as_str()));
+                                }
                             },
                             _ => {
                                 return Err(PError::new(token.get_location(), format!("Unexpected token {}", token).as_str()));

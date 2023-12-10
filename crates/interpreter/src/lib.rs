@@ -69,6 +69,13 @@ pub fn compute(node: &Node, context: &mut Rc<Context>) -> Result<VType, PError> 
             //dict.insert(name.id.as_ref().unwrap().clone(), func);
             Ok(VType::Ref(name.id.as_ref().unwrap().clone()))
         },
+        Op::DefineVar => {
+            Rc::get_mut(context).unwrap().define_var(node.id.as_ref().unwrap());
+            if !node.children.is_empty() {
+                compute(node.children.get(0).unwrap(), context)?;
+            }
+            Ok(VType::Undefined)
+        },
         Op::While => {
             let mut last = VType::Undefined;
             while context.get_var("!return").is_none() && compute(node.children.get(0).unwrap(), context)? != VType::Bool(false) {

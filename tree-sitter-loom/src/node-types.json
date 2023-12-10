@@ -190,6 +190,45 @@
     }
   },
   {
+    "type": "define",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "call",
+          "named": true
+        },
+        {
+          "type": "function",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function",
     "named": true,
     "fields": {},
@@ -327,6 +366,10 @@
         },
         {
           "type": "choice",
+          "named": true
+        },
+        {
+          "type": "define",
           "named": true
         },
         {
@@ -470,6 +513,10 @@
   },
   {
     "type": "if",
+    "named": false
+  },
+  {
+    "type": "let",
     "named": false
   },
   {

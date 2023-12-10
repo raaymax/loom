@@ -45,6 +45,9 @@ impl Context {
         }
         None
     }
+    pub fn define_var(&mut self, name: &str) {
+        self.dict.insert(name.to_string(), VType::Undefined);
+    }
     pub fn set_var(&mut self, name: &str, value: VType) {
         self.dict.insert(name.to_string(), value);
     }
