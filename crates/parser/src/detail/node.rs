@@ -340,7 +340,7 @@ impl Display for Node {
                 if self.children.len() != 1 { write!(f,")")? };
             },
             Op::DefineVar => {
-                if self.children.len() < 1 { 
+                if self.children.is_empty() { 
                     return write!(f,"let {}",self.id.as_ref().unwrap() )
                 };
                 write!(f,"let {}; {}", self.id.as_ref().unwrap(), OptionalNode(self.children.get(0)))?;
