@@ -71,6 +71,7 @@ mod tests {
     test_ast_expr!(ast_op_mul, "{(1 * 2)}", [Number(1), Star(), Number(2)]);
     test_ast_expr!(ast_op_div, "{(1 / 2)}", [Number(1), Slash(), Number(2)]);
     test_ast_expr!(ast_op_eq, "{(1 == 2)}", [Number(1), Eq(), Number(2)]);
+    test_ast_expr!(ast_op_and, "{(1 && 1)}", [Number(1), And(), Number(1)]);
     test_ast_expr!(ast_op_eq_var, "{(a == 2)}", [LParen(), Id("a".to_string()), Eq(), Number(2), RParen()]);
     test_ast_expr!(ast_op_neq, "{(1 != 2)}", [Number(1), Neq(), Number(2)]);
     test_ast_expr!(ast_op_mod, "{(1 % 2)}", [Number(1), Mod(), Number(2)]);

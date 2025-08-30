@@ -30,6 +30,19 @@ fn shor(x) {
   };
   ''
 };
+
+fn pow_mod(a, e, m) {
+  res = 1;
+  base = a % m;
+  while (e > 0) {
+    if (e % 2 == 1) { res = (res * base) % m; };
+    base = (base * base) % m;
+    e = e / 2;
+  };
+  res
+};
+
+
 x = 21;
 y = 49;
 print("gdc("+x+","+y+") = " + gdc(x,y));

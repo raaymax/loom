@@ -68,6 +68,12 @@ mod expressions {
     test_parser!(expr_leq, 
                  "1 <= 2",
                  "{(1 <= 2)}");
+    test_parser!(expr_and, 
+                 "1 && 2",
+                 "{(1 && 2)}");
+    test_parser!(expr_or, 
+                 "1 || 2",
+                 "{(1 || 2)}");
     test_parser!(expr_lt, 
                  "1 < 2",
                  "{(1 < 2)}");
@@ -87,6 +93,9 @@ mod expressions {
     test_parser!(expr_variables, 
                  "num1 + num2", 
                  "{(num1 + num2)}");
+    test_parser!(expr_complex_logical, 
+                 "1 < 2 && 1 + 4 > 4 || 234 >= 234", 
+                 "{(((1 < 2) && ((1 + 4) > 4)) || (234 >= 234))}");
     test_parser!(expr_complex, 
                  "0x123 / ( 2 + 123 ) + 23 * 010 * ( num - 4 )", 
                  "{((291 / (2 + 123)) + ((23 * 8) * (num - 4)))}");
@@ -96,6 +105,9 @@ mod expressions {
     test_parser!(expr_complex_with_conditional, 
                  "0x123 / ( 2 + 123 ) + { asd = 123; if(1) {asd + 2} } * 010 * ( num - 4 )", 
                  "{((291 / (2 + 123)) + (({(asd = 123);if(1){(asd + 2)} else ()} * 8) * (num - 4)))}");
+    test_parser!(no_return_from_file,
+                 "123;",
+                 "{123}");
     test_parser_error!(err_expr_incomplete, 
                  "12+", 
                  "error: Unexpected end of file\n --> file.lum");

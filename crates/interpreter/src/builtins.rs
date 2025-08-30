@@ -7,7 +7,6 @@ use crate::vtype::VType;
 pub struct Args<'a>(&'a Vec<VType>);
 impl Display for Args<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut first = true;
         for (idx, arg) in self.0.iter().enumerate() {
             if idx != 0 {
                 write!(f, ", ")?;
@@ -72,7 +71,6 @@ impl Builtin {
                 }
 
             }
-            _ => Err(PError::new(lexer::Location::zero(), "Not yet implemented")),
         }
     }   
 }

@@ -34,6 +34,8 @@ impl Expression {
             Token::Leq(loc) => Node::new(Op::Leq, *loc),
             Token::Gt(loc) => Node::new(Op::Gt, *loc),
             Token::Geq(loc) => Node::new(Op::Geq, *loc),
+            Token::And(loc) => Node::new(Op::And, *loc),
+            Token::Or(loc) => Node::new(Op::Or, *loc),
             _ => {
                 panic!("Unexpected token to build expression: {}", token);
             }

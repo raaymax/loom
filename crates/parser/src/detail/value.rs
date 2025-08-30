@@ -28,7 +28,6 @@ impl Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "'{}'", s),
-            _ => panic!("Type not yet implemented"),
         }
     }
 }

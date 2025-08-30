@@ -1,6 +1,6 @@
 use std::slice::Iter;
 use lexer::{Token, PError};
-use super::{Op, Expression, Node, Params};
+use super::{Op, Expression, Node};
 use lexer::Location;
 use crate::Parser;
 use crate::{expect, accept};
@@ -21,7 +21,7 @@ impl Parser for Define {
         };
 
         match tok {
-            Token::Assign(loc) => {
+            Token::Assign(_loc) => {
                 let mut assign = Node::new(Op::Assign, name.get_location());
                 assign.add(Node::new(Op::Variable, name.get_location()).set_id(id.to_string()));
                 let (exp, tok) = Expression::consume(token, iter)?;
@@ -30,7 +30,7 @@ impl Parser for Define {
                 tree.add(assign);
                 Ok((tree, tok))
             },
-            Token::Semi(loc) => {
+            Token::Semi(_loc) => {
                 Ok((tree, Some(tok.clone())))
             },
             _ => {

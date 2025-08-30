@@ -53,8 +53,7 @@ impl PError {
                 colors,
             }
         };
-        let err_pos = "";//format!("[ pos: {}, line: {}, line_pos: {}, length: {} ]", pos, l, line_pos, length);
-        let mut line = text.chars()
+        let line = text.chars()
             .skip(pos - line_pos)
             .take_while(|c| *c != '\n')
             .collect::<String>();
@@ -97,21 +96,21 @@ impl Display for FormatedError {
             if let Some(line) = &self.line {
                 let line_number = self.line_number.unwrap().to_string();
                 let space = " ".repeat(line_number.len());
-                writeln!(f, "{} {}\n {}--> {}", "error:".red().bold(), self.message.bold(), space, self.location);
-                writeln!(f," {} |\n {} | {}", space, line_number, line);
+                writeln!(f, "{} {}\n {}--> {}", "error:".red().bold(), self.message.bold(), space, self.location)?;
+                writeln!(f," {} |\n {} | {}", space, line_number, line)?;
                 if let Some(mask) = &self.mask {
-                    writeln!(f, " {} | {}", space, mask.red());
+                    writeln!(f, " {} | {}", space, mask.red())?;
                 };
             }else {
-                writeln!(f, "{} {}\n  --> {}", "error:".red().bold(), self.message.bold(), self.location.yellow());
+                writeln!(f, "{} {}\n  --> {}", "error:".red().bold(), self.message.bold(), self.location.yellow())?;
             }
         }else{
-            write!(f, "error: {}\n --> {}", self.message, self.location);
+            write!(f, "error: {}\n --> {}", self.message, self.location)?;
             if let Some(line) = &self.line {
-                writeln!(f, "\t|\n\t| {}", line);
+                writeln!(f, "\t|\n\t| {}", line)?;
             };
             if let Some(mask) = &self.mask {
-                writeln!(f, "\t| {}", mask);
+                writeln!(f, "\t| {}", mask)?;
             };
         };
         Ok(())

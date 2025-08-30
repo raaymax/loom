@@ -36,6 +36,8 @@ pub enum Token {
     Geq(Location),
     Return(Location),
     Let(Location),
+    And(Location),
+    Or(Location),
 }
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -53,7 +55,6 @@ impl Display for Token {
             Token::Eof => write!(f, "EOF"),
             Token::Semi(pos) => write!(f, "Semi {}", pos),
             Token::String(pos, v) => write!(f, "String {} ( value: \"{}\")", pos, v),
-            Token::Colon(pos) => write!(f, "Colon {}", pos),
             Token::LBrace(pos) => write!(f, "LBrace {}", pos),
             Token::RBrace(pos) => write!(f, "RBrace {}", pos),
             Token::If(pos) => write!(f, "if {}", pos),
@@ -74,6 +75,8 @@ impl Display for Token {
             Token::Geq(pos) => write!(f, "Geq {}", pos),
             Token::Return(pos) => write!(f, "Return {}", pos),
             Token::Let(pos) => write!(f, "Let {}", pos),
+            Token::And(pos) => write!(f, "And {}", pos),
+            Token::Or(pos) => write!(f, "And {}", pos),
         }
     }
 }
@@ -94,7 +97,6 @@ impl Token {
             Token::Eof => Location::Eof,
             Token::Semi(pos) => *pos,
             Token::String(pos, _) => *pos,
-            Token::Colon(pos) => *pos,
             Token::LBrace(pos) => *pos,
             Token::RBrace(pos) => *pos,
             Token::If(pos) => *pos,
@@ -115,6 +117,8 @@ impl Token {
             Token::Geq(pos) => *pos,
             Token::Return(pos) => *pos,
             Token::Let(pos) => *pos,
+            Token::And(pos) => *pos,
+            Token::Or(pos) => *pos,
         }
     }
 
@@ -130,7 +134,9 @@ impl Token {
                  | Token::Lt(..) 
                  | Token::Leq(..)
                  | Token::Gt(..)
-                 | Token::Geq(..))
+                 | Token::Geq(..)
+                 | Token::And(..)
+                 | Token::Or(..))
     }
     pub fn is_modifier(&self) -> bool {
         matches!(self, Token::Not(..))

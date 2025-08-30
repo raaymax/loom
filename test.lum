@@ -1,5 +1,6 @@
-fn gdc(a, b) {
-  while(b!=0) {
+// Euclid GCD
+fn gcd(a, b) {
+  while (b != 0) {
     t = b;
     b = a % b;
     a = t;
@@ -7,31 +8,58 @@ fn gdc(a, b) {
   a
 };
 
-fn findPow(x, z) {
+// fast (a^e) mod m
+fn pow_mod(a, e, m) {
+  res = 1;
+  base = a % m;
+  while (e > 0) {
+    if (e % 2 == 1) { res = (res * base) % m; };
+    base = (base * base) % m;
+    e = e / 2;
+  };
+  res
+};
+
+// multiplicative order of a mod n (assumes gcd(a,n)==1)
+fn findOrder(a, n) {
   y = 1;
-  while (pow(x, y) % z != 1) {
+  t = pow_mod(a, y, n);
+  while (t != 1) {
     y = y + 1;
+    t = pow_mod(a, y, n);
   };
   y
 };
 
+// classical Shor post-processing (trial a)
 fn shor(x) {
+  if (x % 2 == 0) { return "[ " + 2 + ", " + (x/2) + " ]"; };
+
   a = 2;
   while (a < x) {
-    if (gdc(a,x) == 1) {
-      r = findPow(a, x);
-      p = gdc(pow(a, r/2) + 1, x);
-      q = gdc(pow(a, r/2) - 1, x);
-      if (p*q == x) {
-        return "[ " + p + ", " + q +" ]";
+    d = gcd(a, x);
+    if (d > 1 && d < x) { return "[ " + d + ", " + (x/d) + " ]"; };
+
+    if (d == 1) {
+      r = findOrder(a, x);
+      if (r % 2 == 0) {
+        ar2 = pow_mod(a, r/2, x);         // a^(r/2) mod x
+        if (ar2 != x - 1) {               // not -1 mod x
+          p = gcd(ar2 + 1, x);
+          q = gcd(ar2 - 1, x);
+          if (p*q == x && p > 1 && q > 1) { return "[ " + p + ", " + q + " ]"; };
+        };
       };
     };
     a = a + 1;
   };
-  ''
+  ""
 };
-x = 21;
-y = 49;
-print("gdc("+x+","+y+") = " + gdc(x,y));
+
+// smoke tests
+x = 21; y = 49;
+print("gcd("+x+","+y+") = " + gcd(x,y));
 print("shor(15) = " + shor(15));
+assert(gcd(15, 21) == 3);
+assert(shor(15) == "[ 5, 3 ]");
 0

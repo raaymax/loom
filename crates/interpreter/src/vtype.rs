@@ -20,7 +20,6 @@ impl From<Value> for VType {
         match n {
             Value::Number(n) => VType::Number(n),
             Value::String(s) => VType::String(s),
-            _ => panic!("Type not yet implemented {}", n),
         }
     }
 }
@@ -64,7 +63,6 @@ impl Display for VType {
                 }
                 write!(f, ")")
             },
-            _ => panic!("Type not yet implemented"),
         }
     }
 }
@@ -176,6 +174,18 @@ impl  VType {
         match (self, other) {
             (VType::Number(n1), VType::Number(n2)) => VType::Bool(n1 > n2),
             _ => panic!("Cannot compare non-numbers"),
+        }
+    }
+    pub fn and(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Bool(n1), VType::Bool(n2)) => VType::Bool(*n1 && *n2),
+            _ => panic!("Cannot and non-bools"),
+        }
+    }
+    pub fn or(&self, other: &Self) -> VType {
+        match (self, other) {
+            (VType::Bool(n1), VType::Bool(n2)) => VType::Bool(*n1 || *n2),
+            _ => panic!("Cannot or non-bools"),
         }
     }
 }

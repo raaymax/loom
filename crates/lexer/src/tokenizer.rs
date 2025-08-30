@@ -44,6 +44,18 @@ impl<'a> Tokenizer<'a> {
                 }
                 Ok(Token::Id(p.set_range(size), text))
             }
+            '&' => {
+                if self.accept("&&") {
+                    return Ok(Token::And(p.set_range(2)));
+                }
+                Err(PError::new(p.to_point(), "Unexpected character"))
+            },
+            '|' => {
+                if self.accept("||") {
+                    return Ok(Token::Or(p.set_range(2)));
+                }
+                Err(PError::new(p.to_point(), "Unexpected character"))
+            },
             '<' => {
                 if self.accept("<=") {
                     return Ok(Token::Leq(p.set_range(2)));
@@ -126,7 +138,6 @@ impl<'a> Tokenizer<'a> {
         };
         //self.it.nth(expected.len()-1);
     }
-
     fn accept(&mut self, expected: &str) -> bool {
         let mut it = self.it.clone();
         for exp_c in expected.chars() {

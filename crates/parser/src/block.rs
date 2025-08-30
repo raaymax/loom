@@ -9,13 +9,16 @@ impl Parser for Block {
     fn consume(token:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::Scope, token.get_location());
         loop {
+            if let Some(Token::Eof) = iter.clone().next(){
+                return Ok((tree, None));
+            }
             let (node, tok) = Expression::consume(token, iter)?;
             tree.add(node);
 
             let Some(t) = tok else {
                 return Ok((tree,None));
             };
-            match t{
+            match t {
                 Token::RBrace(..) | Token::Eof => {
                     return Ok((tree, Some(t)));
                 },

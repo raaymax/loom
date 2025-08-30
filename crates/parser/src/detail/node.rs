@@ -29,18 +29,22 @@ pub enum Op {
     Lt,
     Geq,
     Gt,
+    And,
+    Or,
 }
 
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
             Op::Scope => 0,
-            Op::DefineVar => 6,
-            Op::Return => 6,
-            Op::Branch => 6,
-            Op::Loop => 6,
-            Op::While => 6,
-            Op::Assign=> 5,
+            Op::DefineVar => 7,
+            Op::Return => 7,
+            Op::Branch => 7,
+            Op::Loop => 7,
+            Op::While => 7,
+            Op::Assign=> 6,
+            Op::And => 6,
+            Op::Or => 6,
             Op::Lt=> 5,
             Op::Leq=> 5,
             Op::Gt=> 5,
@@ -91,6 +95,8 @@ impl Display for Op {
             Op::DefineFunc => write!(f, "Fn"),
             Op::Return => write!(f, "return"),
             Op::DefineVar => write!(f, "let"),
+            Op::And => write!(f, "&&"),
+            Op::Or => write!(f, "||"),
         }
     }
 }
@@ -207,7 +213,7 @@ impl Node {
                 } 
             },
             Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Eq | Op::Neq
-                | Op::Mod | Op::Geq | Op::Gt | Op::Leq | Op::Lt => {
+                | Op::Mod | Op::Geq | Op::Gt | Op::Leq | Op::Lt | Op::And | Op::Or => {
                 if let Some(ref mut right) = self.right_mut() {
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
@@ -253,6 +259,12 @@ impl Display for Node {
             },
             Op::Call=> {
                 write!(f,"{}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::And => {
+                write!(f,"({} && {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
+            Op::Or => {
+                write!(f,"({} || {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Lt => {
                 write!(f,"({} < {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;

@@ -2,7 +2,7 @@ use crate::{errors::PError, iter::{LocationIterator, BufferedIterator}};
 
 pub fn id(it: &mut BufferedIterator<LocationIterator>) -> Result<(usize,String), PError> {
     let mut buf: String = "".to_string();
-    let mut size = 0;
+    let size = 0;
     let mut pos = 0;
     while let Some((_loc, c)) = it.peek() {
         match c {
