@@ -1,7 +1,7 @@
 // Euclid GCD
 fn gcd(a, b) {
   while (b != 0) {
-    t = b;
+    let t = b;
     b = a % b;
     a = t;
   };
@@ -23,7 +23,7 @@ fn pow_mod(a, e, m) {
 // multiplicative order of a mod n (assumes gcd(a,n)==1)
 fn findOrder(a, n) {
   y = 1;
-  t = pow_mod(a, y, n);
+  let t = pow_mod(a, y, n);
   while (t != 1) {
     y = y + 1;
     t = pow_mod(a, y, n);
@@ -57,7 +57,8 @@ fn shor(x) {
 };
 
 // smoke tests
-x = 21; y = 49;
+let x = 21; 
+let y = 49;
 print("gcd("+x+","+y+") = " + gcd(x,y));
 print("shor(15) = " + shor(15));
 assert(gcd(15, 21) == 3);

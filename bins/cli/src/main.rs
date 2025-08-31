@@ -48,7 +48,6 @@ fn main() {
         println!("TREEs:\t{}\n", node);
     }
 
-
     if args.verbose {
         println!("EXECUTING:");
     }

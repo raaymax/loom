@@ -114,6 +114,7 @@ impl Display for OptionalNode<'_> {
     }
 }
 
+pub struct NodeChildNotExist;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
@@ -135,6 +136,10 @@ impl Node {
             id: None,
             children: Vec::new(),
         }
+    }
+
+    pub fn get_child(&self, idx: usize) -> &Node {
+        self.children.get(idx).unwrap()
     }
 
     pub fn set_value(mut self, value: Value) -> Self {
@@ -258,7 +263,7 @@ impl Display for Node {
                 write!(f,"while ({}) {}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Call=> {
-                write!(f,"{}{}", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+                write!(f,"{}({})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::And => {
                 write!(f,"({} && {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;

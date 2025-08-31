@@ -1,10 +1,14 @@
 
 
-
-{
-let a = 5;
-};
-
+let a = 2;
 print(a);
 
-a
+fn asd(a){
+	a = 'asd';
+	print(a);
+};
+
+//print(oko);
+asd(a);
+	print(a);
+a;
