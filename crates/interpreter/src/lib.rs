@@ -1,6 +1,7 @@
 mod vtype;
 mod context;
 mod builtins;
+mod stack;
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -10,7 +11,7 @@ use builtins::Builtin;
 pub use vtype::VType;
 use context::Context;
 
-use crate::context::StackError;
+use crate::{context::StackError, stack::{StackFrame, StackFramePtr}};
 
 
 pub fn extract_names(node: &Node) -> Result<Vec<String>,PError> {
@@ -24,42 +25,42 @@ pub fn extract_names(node: &Node) -> Result<Vec<String>,PError> {
     Ok(names)
 }
 macro_rules! compute_unary{
-    ($node:ident, $ctx: ident, $op:ident) => {
+    ($node:ident, $ctx: ident, $stk: ident, $op:ident) => {
         {
-            let left = compute($node.left().unwrap(), $ctx)?;
+            let left = compute($node.left().unwrap(), $ctx, $stk)?;
             Ok(left.$op())
         }
     };
 }
 macro_rules! compute_binary {
-    ($node:ident, $ctx: ident, $op:ident) => {
+    ($node:ident, $ctx: ident, $stk: ident, $op:ident) => {
         {
-            let left = compute($node.left().unwrap(), $ctx)?;
-            let right = compute($node.right().unwrap(), $ctx)?;
+            let left = compute($node.left().unwrap(), $ctx, $stk)?;
+            let right = compute($node.right().unwrap(), $ctx, $stk)?;
             Ok(left.$op(&right))
         }
     };
 }
 
 macro_rules! compute_binop {
-    ($node:ident, $ctx: ident, $op:tt) => {
+    ($node:ident, $ctx: ident, $stk: ident, $op:tt) => {
         {
-            let left = compute($node.left().unwrap(), $ctx)?;
-            let right = compute($node.right().unwrap(), $ctx)?;
+            let left = compute($node.left().unwrap(), $ctx, $stk)?;
+            let right = compute($node.right().unwrap(), $ctx, $stk)?;
             Ok(left $op right)
         }
     };
 }
 
-pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PError> {
+pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePtr) -> Result<VType, PError> {
     if let Some(v) = context.borrow().get_var("!return") {
         //println!("Ret: {} {}", v, node);
         return Ok(v.clone())
     }
     match node.op {
         Op::Return => {
-            let value = compute(node.get_child(0), context)?;
-            context.borrow_mut().define_var("!return", value.clone());
+            let value = compute(node.get_child(0), context, stack)?;
+            stack.borrow_mut().set_return_value(value.clone());
             Ok(value)
         },
         Op::DefineFunc => {
@@ -67,7 +68,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
             let args = node.get_child(1);
             let body = node.get_child(2);
             let arg_names = extract_names(args)?;
-            let func = VType::Func(arg_names, body.clone());
+            let func = VType::Func(arg_names, body.clone(), format!("{}", name));
             context.borrow_mut().define_var(name.id.as_ref().unwrap(), func);
             //dict.insert(name.id.as_ref().unwrap().clone(), func);
             Ok(VType::Ref(name.id.as_ref().unwrap().clone()))
@@ -75,55 +76,65 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
         Op::DefineVar => {
             context.borrow_mut().define_var(node.id.as_ref().unwrap(), VType::Undefined);
             if !node.children.is_empty() {
-                compute(node.get_child(0), context)?;
+                compute(node.get_child(0), context, stack)?;
             }
             Ok(VType::Undefined)
         },
         Op::While => {
             let mut last = VType::Undefined;
-            while context.borrow().get_var("!return").is_none() && compute(node.get_child(0), context)? != VType::Bool(false) {
-                last = compute(node.get_child(1), context)?;
+            while !stack.borrow().has_returned() && compute(node.get_child(0), context, stack)? != VType::Bool(false) {
+                last = compute(node.get_child(1), context, stack)?;
             }
             Ok(last)
         },
         Op::Args => {
             let mut args = Vec::new();
             for child in &node.children {
-                args.push(compute(child, context)?);
+                args.push(compute(child, context, stack)?);
             }
             Ok(VType::Args(args))
         },
         Op::Call => {
-            let func = compute(node.get_child(0), context)?;
+            let func = compute(node.get_child(0), context, stack)?;
             match func {
                 VType::Builtin(func)  => {
-                    let args = compute(node.get_child(1), context)?;
+                    let next_stack = StackFrame::new(format!("{}", func).as_str(), node.location, Some(stack.clone()));
+                    let args = compute(node.get_child(1), context, stack)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
-                    func.call(&args)
+                    func.call(node.location, &args, &next_stack)
                 },
                 VType::Ref(name) => {
-                    let args = compute(node.get_child(1), context)?;
+                    let next_stack = StackFrame::new(name.as_str(), node.location, Some(stack.clone()));
+                    let args = compute(node.get_child(1), context, stack)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
                     let func = context.borrow().get_var(&name).unwrap();
                     match func {
-                        VType::Func(arg_names, body) => {
+                        VType::Func(arg_names, body, name) => {
                             let child_context = Context::new_child(&name, node.location, context);
                             for (idx, arg) in arg_names.iter().enumerate() {
                                 child_context.borrow_mut().define_var(arg, args.get(idx).unwrap().clone())
                             }
-                            compute(&body, &child_context)
+                            let val = compute(&body, &child_context, &next_stack)?;
+                            let ret = next_stack.borrow().get_return_value().unwrap_or(VType::Undefined).clone();
+
+                            if let VType::Undefined = ret {
+                                Ok(val)
+                            } else {
+                                Ok(ret)
+                            }
                         },
                         _ => {
                             return Err(PError::new(node.location, "Not a function"));
                         }
                     }
                 },
-                VType::Func(arg_names, body) => {
-                    let args = compute(node.get_child(1), context)?;
+                VType::Func(arg_names, body, name) => {
+                    let next_stack = StackFrame::new(name.as_str(), node.location, Some(stack.clone()));
+                    let args = compute(node.get_child(1), context, stack)?;
                     let VType::Args(args) = args else {
                         return Err(PError::new(node.location, "Invalid arguments"));
                     };
@@ -131,7 +142,13 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
                     for (idx, arg) in arg_names.iter().enumerate() {
                         child_context.borrow_mut().define_var(arg, args.get(idx).unwrap().clone())
                     }
-                    compute(&body, &child_context)
+                    let val = compute(&body, &child_context, &next_stack)?;
+                    let ret = next_stack.borrow().get_return_value().unwrap_or(VType::Undefined).clone();
+                    if let VType::Undefined = ret {
+                        Ok(val)
+                    } else {
+                        Ok(ret)
+                    }
                 },
                 _ => {
                     return Err(PError::new(node.location, "Not a function"));
@@ -139,18 +156,18 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
             }
         },
         Op::Branch=> {
-            let cond = compute(node.get_child(0), context)?;
+            let cond = compute(node.get_child(0), context, stack)?;
             if let VType::Number(c) = cond {
                 if c != 0 {
-                    return compute(node.get_child(1), context);
+                    return compute(node.get_child(1), context, stack);
                 } else {
-                    return compute(node.get_child(2), context);
+                    return compute(node.get_child(2), context, stack);
                 }
             } if let VType::Bool(b) = cond {
                 if b {
-                    return compute(node.get_child(1), context);
+                    return compute(node.get_child(1), context, stack);
                 } else {
-                    return compute(node.get_child(2), context);
+                    return compute(node.get_child(2), context, stack);
                 }
             } else {
                 return Err(PError::new(node.location, format!("Invalid condition {}", cond).as_str()));
@@ -159,7 +176,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
         Op::Paren => {
             let mut last = VType::Undefined;
             for child in &node.children {
-                last = compute(child, context)?;
+                last = compute(child, context, stack)?;
             }
             Ok(last)
         },
@@ -167,24 +184,24 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
             let mut last = VType::Undefined;
             let child_context = Context::new_child("child", node.location, context);
             for child in &node.children {
-                last = compute(child, &child_context)?;
+                last = compute(child, &child_context, stack)?;
             }
             Ok(last)
         },
-        Op::Add => compute_binop!(node, context, +),
-        Op::Sub => compute_binop!(node, context, -),
-        Op::Mul => compute_binop!(node, context, *),
-        Op::Div => compute_binop!(node, context, /),
-        Op::Mod => compute_binary!(node, context, modulo),
-        Op::Eq => compute_binary!(node, context, equal),
-        Op::Neq => compute_binary!(node, context, not_equal),
-        Op::Not => compute_unary!(node, context, not),
-        Op::Gt => compute_binary!(node, context, gt),
-        Op::Lt => compute_binary!(node, context, lt),
-        Op::Geq => compute_binary!(node, context, geq),
-        Op::Leq => compute_binary!(node, context, leq),
-        Op::And => compute_binary!(node, context, and),
-        Op::Or => compute_binary!(node, context, or),
+        Op::Add => compute_binop!(node, context, stack, +),
+        Op::Sub => compute_binop!(node, context, stack, -),
+        Op::Mul => compute_binop!(node, context, stack, *),
+        Op::Div => compute_binop!(node, context, stack, /),
+        Op::Mod => compute_binary!(node, context, stack, modulo),
+        Op::Eq => compute_binary!(node, context, stack, equal),
+        Op::Neq => compute_binary!(node, context, stack, not_equal),
+        Op::Not => compute_unary!(node, context, stack, not),
+        Op::Gt => compute_binary!(node, context, stack, gt),
+        Op::Lt => compute_binary!(node, context, stack, lt),
+        Op::Geq => compute_binary!(node, context, stack, geq),
+        Op::Leq => compute_binary!(node, context, stack, leq),
+        Op::And => compute_binary!(node, context, stack, and),
+        Op::Or => compute_binary!(node, context, stack, or),
 
 
         Op::Value => {
@@ -224,7 +241,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
             if !context.borrow().exists(left) {
                 return Err(PError::new(node.location, format!("Variable {} not defined", left).as_str()));
             }
-            let right = compute(node.right().unwrap(), context)?;
+            let right = compute(node.right().unwrap(), context, stack)?;
             if let Err(err) = context.borrow_mut().set_var(left, right.clone()) {
                 context.borrow().print_stack();
                 match err {
@@ -244,6 +261,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>) -> Result<VType, PEr
 
 pub fn interpret(node: Node) -> Result<VType, PError> {
     let context = Context::new("global", node.location);
-    compute(&node, &context)
+    let stack = StackFrame::new("global", node.location, None);
+    compute(&node, &context, &stack)
 }
 

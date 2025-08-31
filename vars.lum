@@ -1,14 +1,4 @@
 
+fn fact(x) if (x == 1) { 1 } else {print('.'); x * fact(x - 1) };
 
-let a = 2;
-print(a);
-
-fn asd(a){
-	a = 'asd';
-	print(a);
-};
-
-//print(oko);
-asd(a);
-	print(a);
-a;
+print("fact(5): " + fact(5));
