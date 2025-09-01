@@ -1,3 +1,4 @@
+use interpreter::VType;
 pub use lexer::*;
 use clap::Parser;
 
@@ -56,6 +57,15 @@ fn main() {
         std::process::exit(1);
     });
 
+    if let VType::Undefined = value {
+        println!("\nExited with code: 0");
+        std::process::exit(0);
+    }
+    if let VType::Number(n)= value {
+        println!("\nExited with code: {}", n);
+        std::process::exit(n);
+    }
     println!("\nExited with code: {}", value);
+    std::process::exit(0);
 }
 

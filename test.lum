@@ -1,9 +1,3 @@
-// Test return statement
-fn test_return() {
-  return "hello";
-  "world"
-};
-
 // Euclid GCD
 fn gcd(a, b) {
   while (b != 0) {
@@ -43,25 +37,17 @@ fn shor(x) {
 
   let a = 2;
   while (a < x) {
-    print("Testing a = " + a);
     let d = gcd(a, x);
-    print("gcd(" + a + ", " + x + ") = " + d);
     if (d > 1 && d < x) { return "[ " + d + ", " + (x/d) + " ]"; };
 
     if (d == 1) {
-      print("a = " + a + " is coprime with " + x + ", finding order...");
       let r = findOrder(a, x);
-      print("Order of " + a + " mod " + x + " is " + r);
       if (r % 2 == 0) {
         let ar2 = pow_mod(a, r/2, x);         // a^(r/2) mod x
-        print("a^(r/2) mod x = " + ar2);
         if (ar2 != x - 1) {               // not -1 mod x
           let p = gcd(ar2 + 1, x);
           let q = gcd(ar2 - 1, x);
-          print("gcd(ar2+1, x) = " + p + ", gcd(ar2-1, x) = " + q);
-          print("p = " + p + ", q = " + q + ", p*q = " + (p*q) + ", x = " + x);
           if (p*q == x && p > 1 && q > 1) { 
-            print("Found factors! Returning [ " + p + ", " + q + " ]");
             return "[ " + p + ", " + q + " ]"; 
           };
         };
@@ -69,15 +55,12 @@ fn shor(x) {
     };
     a = a + 1;
   };
-  ""
 };
 
 // smoke tests
-print("test_return() = " + test_return());
 let x = 21; 
 let y = 49;
 print("gcd("+x+","+y+") = " + gcd(x,y));
 print("shor(15) = " + shor(15));
 assert(gcd(15, 21) == 3);
 assert(shor(15) == "[ 5, 3 ]");
-0
