@@ -2,7 +2,7 @@ mod vtype;
 mod context;
 mod builtins;
 mod stack;
-use std::rc::Rc;
+use std::{collections::VecDeque, rc::Rc};
 use std::cell::RefCell;
 
 use parser::{Node, Op};
@@ -24,6 +24,7 @@ pub fn extract_names(node: &Node) -> Result<Vec<String>,PError> {
     }
     Ok(names)
 }
+
 macro_rules! compute_unary{
     ($node:ident, $ctx: ident, $stk: ident, $op:ident) => {
         {
@@ -32,6 +33,7 @@ macro_rules! compute_unary{
         }
     };
 }
+
 macro_rules! compute_binary {
     ($node:ident, $ctx: ident, $stk: ident, $op:ident) => {
         {
@@ -53,9 +55,9 @@ macro_rules! compute_binop {
 }
 
 pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePtr) -> Result<VType, PError> {
-    if let Some(v) = context.borrow().get_var("!return") {
-        //println!("Ret: {} {}", v, node);
-        return Ok(v.clone())
+    if stack.borrow().has_returned() {
+        let ret = stack.borrow().get_return_value().unwrap_or(VType::Undefined).clone();
+        return Ok(ret);
     }
     match node.op {
         Op::Return => {
@@ -69,9 +71,12 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
             let body = node.get_child(2);
             let arg_names = extract_names(args)?;
             let func = VType::Func(arg_names, body.clone(), format!("{}", name));
-            context.borrow_mut().define_var(name.id.as_ref().unwrap(), func);
-            //dict.insert(name.id.as_ref().unwrap().clone(), func);
-            Ok(VType::Ref(name.id.as_ref().unwrap().clone()))
+            let mut id = name.id.as_ref().unwrap_or(&"".to_string()).clone();
+            if id.is_empty() {
+                id = format!("_anon_{}", node.location);
+            }
+            context.borrow_mut().define_var(id.as_str(), func);
+            Ok(VType::Ref(id))
         },
         Op::DefineVar => {
             context.borrow_mut().define_var(node.id.as_ref().unwrap(), VType::Undefined);
@@ -155,7 +160,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
                 }
             }
         },
-        Op::Branch=> {
+        Op::Branch => {
             let cond = compute(node.get_child(0), context, stack)?;
             if let VType::Number(c) = cond {
                 if c != 0 {
@@ -183,7 +188,7 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
         Op::Scope | Op::Loop => {
             let mut last = VType::Undefined;
             let child_context = Context::new_child("child", node.location, context);
-            for child in &node.children {
+            for (i, child) in node.children.iter().enumerate() {
                 last = compute(child, &child_context, stack)?;
             }
             Ok(last)
@@ -202,7 +207,6 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
         Op::Leq => compute_binary!(node, context, stack, leq),
         Op::And => compute_binary!(node, context, stack, and),
         Op::Or => compute_binary!(node, context, stack, or),
-
 
         Op::Value => {
             let Some(val) = node.value.as_ref() else {
@@ -227,11 +231,6 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
                 return Err(PError::new(node.location, format!("Variable {} not defined", id).as_str()));
             };
 
-            /*
-            let Some(val) = dict.get(id) else {
-                return Err(PError::new(node.location, "Variable not defined"));
-            };
-            */
             Ok(val.clone())
         },
         Op::Assign => {
@@ -253,15 +252,16 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
                     }
                 }
             }
-            //dict.insert(left.clone(), right.clone());
             Ok(right)
         }
     }
 }
 
+
 pub fn interpret(node: Node) -> Result<VType, PError> {
     let context = Context::new("global", node.location);
     let stack = StackFrame::new("global", node.location, None);
+
     compute(&node, &context, &stack)
 }
 

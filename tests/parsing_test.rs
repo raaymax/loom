@@ -141,8 +141,14 @@ mod expressions {
     test_parser!(expr_while_loop_complex,
                  "a=0; while(a == 2) a = a + 1; a",
                  "{(a = 0);while ((a == 2)) (a = (a + 1));a}");
-
+    test_parser!(expr_lambda_function,
+                 "let a=fn(x) x;",
+                 "{let a; (a = fn _anonymous_x x)}");
     /*
+    test_parser!(expr_lambda_function_eof,
+                 "let a=fn(x) x",
+                 "{let a; (a = fn _anonymous_x x)}");
+
     test_parser_error!(err_expr_just_braces_instead_of_operand,
                  "123 + ()", 
                  "123 + ()\n       ^\nInvalid expression, expected ID or Number");

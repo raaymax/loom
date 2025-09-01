@@ -118,7 +118,6 @@ pub struct NodeChildNotExist;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
-    pub defs: HashMap<String, Node>,
     pub op: Op,
     pub location: Location,
     pub value: Option<Value>,
@@ -132,7 +131,6 @@ impl Node {
             op,
             location,
             value: None,
-            defs: HashMap::new(),
             id: None,
             children: Vec::new(),
         }
@@ -308,7 +306,7 @@ impl Display for Node {
                 write!(f,"({} = {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
             Op::Value => {write!(f, "{}", self.value.as_ref().unwrap())?;},
-            Op::Variable => {write!(f, "{}", self.id.as_ref().unwrap())?;},
+            Op::Variable => {write!(f, "{}", self.id.as_ref().unwrap_or(&"_anonymous_".to_string()))?;},
             Op::Scope => {
                 write!(f,"{{")?;
                 for (idx, node) in self.children.iter().enumerate() {

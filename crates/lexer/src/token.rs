@@ -38,6 +38,7 @@ pub enum Token {
     Let(Location),
     And(Location),
     Or(Location),
+    None(Location)
 }
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -77,6 +78,7 @@ impl Display for Token {
             Token::Let(pos) => write!(f, "Let {}", pos),
             Token::And(pos) => write!(f, "And {}", pos),
             Token::Or(pos) => write!(f, "And {}", pos),
+            Token::None(pos) => write!(f, "None {}", pos),
         }
     }
 }
@@ -119,6 +121,7 @@ impl Token {
             Token::Let(pos) => *pos,
             Token::And(pos) => *pos,
             Token::Or(pos) => *pos,
+            Token::None(pos) => *pos,
         }
     }
 
@@ -155,6 +158,7 @@ impl Token {
     pub fn is_noun(&self) -> bool {
         matches!(self, Token::Number(..)
                  | Token::Id(..)
+                 | Token::None(..)
                  | Token::String(..))
     }
 }

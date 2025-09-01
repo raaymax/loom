@@ -108,7 +108,7 @@ impl Parser for Expression {
                                     tree.add(block);
                                     return Ok((tree, tok));
                                 } else {
-                                    return Err(PError::new(Location::Eof, format!("Unexpected end of file, semicolon not found {}", token.get_location()).as_str()));
+                                    return Err(PError::new(token.get_location(), format!("Unexpected end of file, semicolon not found {}", token.get_location()).as_str()));
                                 }
                             },
                             _ => {

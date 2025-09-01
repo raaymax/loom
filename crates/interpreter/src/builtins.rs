@@ -46,14 +46,6 @@ impl Builtin {
             _ => None,
         }
     }
-    pub fn includes(name: &str) -> bool {
-        match name {
-            "print" => true,
-            "pow" => true,
-            "assert" => true,
-            _ => false,
-        }
-    }
     pub fn call(&self, location: Location, args: &Vec<VType>, trace: &StackFramePtr) -> Result<VType, PError> {
         match self{
             Self::Print => {

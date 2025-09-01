@@ -11,6 +11,7 @@ impl Func{
     fn node_from(token: &Token) -> Node{
         match token {
             Token::Id(loc, id) => Node::new(Op::Variable, *loc).set_id(id.clone()),
+            Token::None(loc) => Node::new(Op::Variable, *loc),
             _ => {
                 panic!("Unexpected token in function builder: {}", token);
             }
@@ -20,8 +21,13 @@ impl Func{
 impl Parser for Func {
     fn consume(token:  &Token, iter: &mut Iter<Token>) -> Result<(Node, Option<Token>), PError> {
         let mut tree = Node::new(Op::DefineFunc, token.get_location());
-        let name = accept!(iter, Id);
-        tree.add(Func::node_from(name));
+        
+        if let Some(Token::LParen(loc)) = iter.clone().next() {
+            tree.add(Func::node_from(&Token::None(loc.clone())));
+        } else {
+            let name = accept!(iter, Id);
+            tree.add(Func::node_from(name));
+        }
         accept!(iter, LParen);
         let (params, tok) = Params::consume(token, iter)?;
         tree.add(params);
