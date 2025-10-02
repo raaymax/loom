@@ -1,5 +1,5 @@
 use super::value::Value;
-use std::{fmt::Display, collections::HashMap};
+use std::fmt::Display;
 use lexer::Location;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -31,38 +31,40 @@ pub enum Op {
     Gt,
     And,
     Or,
+    Access
 }
 
 impl Op {
     pub fn priority(&self) -> u32 {
         match self {
-            Op::Scope => 0,
-            Op::DefineVar => 7,
-            Op::Return => 7,
-            Op::Branch => 7,
-            Op::Loop => 7,
-            Op::While => 7,
-            Op::Assign=> 6,
-            Op::And => 6,
-            Op::Or => 6,
-            Op::Lt=> 5,
-            Op::Leq=> 5,
-            Op::Gt=> 5,
-            Op::Geq=> 5,
-            Op::Neq=> 5,
-            Op::Eq=> 5,
-            Op::Add => 4,
-            Op::Sub => 4,
-            Op::Mul => 3,
-            Op::Div => 3,
-            Op::Mod => 2,
-            Op::Call => 1,
-            Op::Args => 1,
-            Op::Not=> 1,
+            Op::DefineVar => 8,
+            Op::Return => 8,
+            Op::Branch => 8,
+            Op::Loop => 8,
+            Op::While => 8,
+            Op::Assign=> 7,
+            Op::And => 7,
+            Op::Or => 7,
+            Op::Lt=> 6,
+            Op::Leq=> 6,
+            Op::Gt=> 6,
+            Op::Geq=> 6,
+            Op::Neq=> 6,
+            Op::Eq=> 6,
+            Op::Add => 5,
+            Op::Sub => 5,
+            Op::Mul => 4,
+            Op::Div => 4,
+            Op::Mod => 3,
+            Op::Call => 2,
+            Op::Args => 2,
+            Op::Not=> 2,
+            Op::Access => 1,
             Op::DefineFunc=> 0,
             Op::Value => 0,
             Op::Variable=> 0,
             Op::Paren => 0,
+            Op::Scope => 0,
         }
     }
 }
@@ -97,6 +99,7 @@ impl Display for Op {
             Op::DefineVar => write!(f, "let"),
             Op::And => write!(f, "&&"),
             Op::Or => write!(f, "||"),
+            Op::Access => write!(f, "."),
         }
     }
 }
@@ -114,10 +117,10 @@ impl Display for OptionalNode<'_> {
     }
 }
 
+pub struct NodeChildNotExist;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
-    pub defs: HashMap<String, Node>,
     pub op: Op,
     pub location: Location,
     pub value: Option<Value>,
@@ -131,10 +134,16 @@ impl Node {
             op,
             location,
             value: None,
-            defs: HashMap::new(),
             id: None,
             children: Vec::new(),
         }
+    }
+
+    pub fn children_count(&self) -> usize {
+        self.children.len()
+    }
+    pub fn get_child(&self, idx: usize) -> &Node {
+        self.children.get(idx).unwrap()
     }
 
     pub fn set_value(mut self, value: Value) -> Self {
@@ -213,7 +222,7 @@ impl Node {
                 } 
             },
             Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Eq | Op::Neq
-                | Op::Mod | Op::Geq | Op::Gt | Op::Leq | Op::Lt | Op::And | Op::Or => {
+                | Op::Mod | Op::Geq | Op::Gt | Op::Leq | Op::Lt | Op::And | Op::Or | Op::Access => {
                 if let Some(ref mut right) = self.right_mut() {
                     if node.priority() < right.priority() {
                         //println!("right: {} -> {}", right, node);
@@ -302,8 +311,11 @@ impl Display for Node {
             Op::Assign=> {
                 write!(f,"({} = {})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
             },
+            Op::Access => {
+                write!(f,"({}.{})", OptionalNode(self.children.get(0)), OptionalNode(self.children.get(1)))?;
+            },
             Op::Value => {write!(f, "{}", self.value.as_ref().unwrap())?;},
-            Op::Variable => {write!(f, "{}", self.id.as_ref().unwrap())?;},
+            Op::Variable => {write!(f, "{}", self.id.as_ref().unwrap_or(&"_anonymous_".to_string()))?;},
             Op::Scope => {
                 write!(f,"{{")?;
                 for (idx, node) in self.children.iter().enumerate() {

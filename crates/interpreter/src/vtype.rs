@@ -6,7 +6,7 @@ use crate::builtins::Builtin;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VType {
-    Func(Vec<String>, Node),
+    Func(Vec<String>, Node, String),
     Ref(String),
     Builtin(Builtin),
     Bool(bool),
@@ -20,6 +20,33 @@ impl From<Value> for VType {
         match n {
             Value::Number(n) => VType::Number(n),
             Value::String(s) => VType::String(s),
+        }
+    }
+}
+
+impl From<VType> for String {
+    fn from(v: VType) -> Self {
+        match v {
+            VType::Number(n) => n.to_string(),
+            VType::String(s) => s,
+            VType::Undefined => "undefined".to_string(),
+            VType::Bool(b) => b.to_string(),
+            VType::Builtin(b) => format!("{:?}", b),
+            VType::Func(_, _, name) => { if !name.is_empty() { format!("fn {}", name) } else { "fn".to_string() } },
+            VType::Ref(s) => format!("ref {}", s),
+            VType::Args(args) => {
+                let mut s = String::from("(");
+                let mut first = true;
+                for arg in args {
+                    if !first {
+                        s.push_str(", ");
+                    }
+                    first = false;
+                    s.push_str(&arg.to_string());
+                }
+                s.push(')');
+                s
+            },
         }
     }
 }
@@ -49,7 +76,7 @@ impl Display for VType {
             VType::Undefined => write!(f, "undefined"),
             VType::Bool(b) => write!(f, "{}", b),
             VType::Builtin(b) => write!(f, "{:?}", b),
-            VType::Func(_, _) => write!(f, "function"),
+            VType::Func(_, _, name) => write!(f, "fn {}", name),
             VType::Ref(s) => write!(f, "ref {}", s),
             VType::Args(args) => {
                 write!(f, "(")?;
@@ -77,7 +104,8 @@ impl Add for VType {
             (VType::String(s1), VType::Number(s2)) => VType::String(s1 + &s2.to_string()),
             (VType::Number(s1), VType::String(s2)) => VType::String(s1.to_string() + &s2),
             (VType::String(s1), VType::String(s2)) => VType::String(s1 + &s2),
-            _ => panic!("Operation not yet implemented"),
+            (VType::String(s1), VType::Undefined) => VType::String(s1 + "undefined"),
+            (a, b) => panic!("Operation not yet implemented {:?} + {:?}", a, b),
         }
     }
 }

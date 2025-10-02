@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use lexer::PError;
-use crate::{OpCode, Instr, Instrs};
+use crate::Instr;
 
 
 macro_rules! parse_instr {

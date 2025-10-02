@@ -41,11 +41,16 @@ macro_rules! test_compute_error{
 
 test_compute!(simple, "1 + 2", 3);
 test_compute!(with_braces, "2 * (3 + 4) ", 14);
-test_compute!(with_variable, "asd = 4; 2 * (3 + asd) ", 14);
-test_compute!(with_two_variables, "qwe=3; asd = 4; 2 * (qwe + asd) ", 14);
+test_compute!(with_variable, "let asd = 4; 2 * (3 + asd) ", 14);
+test_compute!(with_two_variables, "let qwe=3; let asd = 4; 2 * (qwe + asd) ", 14);
 test_compute!(conditional_positive, "if(1){5}else{7}", 5);
 test_compute!(conditional_negative, "if(0){5}else{7}", 7);
-test_compute!(strings_multiplication, "qwe='oko'; qwe*3", "okookooko");
-test_compute!(while_loop, "a=0; while(a!=2) a = a + 1; a", 2);
-//test_compute!(goal, "fn qwe(x) x*2; asd = 4; 2 * (qwe(5) + asd) ", 28);
+test_compute!(strings_multiplication, "let qwe='oko'; qwe*3", "okookooko");
+test_compute!(while_loop, "let a=0; while(a!=2) a = a + 1; a", 2);
+test_compute!(while_loop_return, "let a=0; while(a<5) if (a == 3) { return a } else { a = a + 1; a}", 3);
+test_compute!(functions_and_variables, "fn qwe(x) x*2; let asd = 4; 2 * (qwe(5) + asd)", 28);
+test_compute!(recursive_functions, "fn fact(x) if (x <= 1) { 1 } else { x * fact(x - 1) }; fact(5)", 120);
+test_compute!(lambda_functions, "let qwe = fn(x) x*2; qwe(14)", 28);
+//test_compute!(goal_recursive_fib, "fn fib(x) if (x == 1 || x == 2) { 1 } else { fib(x - 1) + fib(x - 2) }; fib(10)", 55);
 //test_compute_error!(err_goal, "123 + 'text'", "123 + 'text'\n    ^       \nIncompatible types");
+

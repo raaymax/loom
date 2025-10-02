@@ -1,7 +1,7 @@
 // Euclid GCD
 fn gcd(a, b) {
   while (b != 0) {
-    t = b;
+    let t = b;
     b = a % b;
     a = t;
   };
@@ -10,8 +10,8 @@ fn gcd(a, b) {
 
 // fast (a^e) mod m
 fn pow_mod(a, e, m) {
-  res = 1;
-  base = a % m;
+  let res = 1;
+  let base = a % m;
   while (e > 0) {
     if (e % 2 == 1) { res = (res * base) % m; };
     base = (base * base) % m;
@@ -22,8 +22,8 @@ fn pow_mod(a, e, m) {
 
 // multiplicative order of a mod n (assumes gcd(a,n)==1)
 fn findOrder(a, n) {
-  y = 1;
-  t = pow_mod(a, y, n);
+  let y = 1;
+  let t = pow_mod(a, y, n);
   while (t != 1) {
     y = y + 1;
     t = pow_mod(a, y, n);
@@ -35,31 +35,32 @@ fn findOrder(a, n) {
 fn shor(x) {
   if (x % 2 == 0) { return "[ " + 2 + ", " + (x/2) + " ]"; };
 
-  a = 2;
+  let a = 2;
   while (a < x) {
-    d = gcd(a, x);
+    let d = gcd(a, x);
     if (d > 1 && d < x) { return "[ " + d + ", " + (x/d) + " ]"; };
 
     if (d == 1) {
-      r = findOrder(a, x);
+      let r = findOrder(a, x);
       if (r % 2 == 0) {
-        ar2 = pow_mod(a, r/2, x);         // a^(r/2) mod x
+        let ar2 = pow_mod(a, r/2, x);         // a^(r/2) mod x
         if (ar2 != x - 1) {               // not -1 mod x
-          p = gcd(ar2 + 1, x);
-          q = gcd(ar2 - 1, x);
-          if (p*q == x && p > 1 && q > 1) { return "[ " + p + ", " + q + " ]"; };
+          let p = gcd(ar2 + 1, x);
+          let q = gcd(ar2 - 1, x);
+          if (p*q == x && p > 1 && q > 1) { 
+            return "[ " + p + ", " + q + " ]"; 
+          };
         };
       };
     };
     a = a + 1;
   };
-  ""
 };
 
 // smoke tests
-x = 21; y = 49;
+let x = 21; 
+let y = 49;
 print("gcd("+x+","+y+") = " + gcd(x,y));
 print("shor(15) = " + shor(15));
 assert(gcd(15, 21) == 3);
 assert(shor(15) == "[ 5, 3 ]");
-0

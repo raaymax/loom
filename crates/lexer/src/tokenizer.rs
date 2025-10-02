@@ -70,6 +70,7 @@ impl<'a> Tokenizer<'a> {
             },
             '+' =>  Ok(Token::Plus(self.get_location(1))),
             '-' =>  Ok(Token::Minus(self.get_location(1))),
+            '.' =>  Ok(Token::Dot(self.get_location(1))),
             '=' => {
                 if self.accept("==") {
                     return Ok(Token::Eq(p.set_range(2)));
@@ -106,10 +107,10 @@ impl<'a> Tokenizer<'a> {
                 let (size, num) = string(&mut self.it)?;
                 Ok(Token::String(p.set_range(size), num))
             },
-            '\n' | ' ' => {
+            c if self.is_whitespace(c) => {
                 self.ignore_white_spaces();
                 self.get_next()
-            }
+            },
             _ => Err(PError::new(p.to_point(), "Unexpected character"))
         }
     }
@@ -125,7 +126,7 @@ impl<'a> Tokenizer<'a> {
 
     fn ignore_white_spaces(&mut self) {
         while let Some((_, c)) = self.it.clone().next() {
-            if c == ' ' || c == '\n' {
+            if self.is_whitespace(c) {
                 self.it.next();
             } else {
                 break;
@@ -149,6 +150,10 @@ impl<'a> Tokenizer<'a> {
         }
         self.it.nth(expected.len()-1);
         true
+    }
+
+    fn is_whitespace(&self, c: char) -> bool {
+        c == ' ' || c == '\n' || c == '\t'
     }
 
 }

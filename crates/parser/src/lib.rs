@@ -67,6 +67,8 @@ mod tests {
 
     test_ast_expr!(ast_number, "{1}", [Number(1)]);
     test_ast_expr!(ast_op_add, "{(1 + 2)}", [Number(1), Plus(), Number(2)]);
+    test_ast_expr!(ast_access, "{(a.b)}", [Id("a".to_string()), Dot(), Id("b".to_string())]);
+    test_ast_expr!(ast_access_complex, "{((a.b) + (x.d))}", [Id("a".to_string()), Dot(), Id("b".to_string()), Plus(), Id("x".to_string()), Dot(), Id("d".to_string())]);
     test_ast_expr!(ast_op_sub, "{(1 - 2)}", [Number(1), Minus(), Number(2)]);
     test_ast_expr!(ast_op_mul, "{(1 * 2)}", [Number(1), Star(), Number(2)]);
     test_ast_expr!(ast_op_div, "{(1 / 2)}", [Number(1), Slash(), Number(2)]);

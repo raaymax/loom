@@ -36,6 +36,7 @@ impl Expression {
             Token::Geq(loc) => Node::new(Op::Geq, *loc),
             Token::And(loc) => Node::new(Op::And, *loc),
             Token::Or(loc) => Node::new(Op::Or, *loc),
+            Token::Dot(loc) => Node::new(Op::Access, *loc),
             _ => {
                 panic!("Unexpected token to build expression: {}", token);
             }
@@ -108,7 +109,7 @@ impl Parser for Expression {
                                     tree.add(block);
                                     return Ok((tree, tok));
                                 } else {
-                                    return Err(PError::new(Location::Eof, format!("Unexpected end of file, semicolon not found {}", token.get_location()).as_str()));
+                                    return Err(PError::new(token.get_location(), format!("Unexpected end of file, semicolon not found {}", token.get_location()).as_str()));
                                 }
                             },
                             _ => {
@@ -130,7 +131,11 @@ impl Parser for Expression {
                     }
                 },
                 ExpressionState::Op => {
-                    if token.is_operator() {
+                    if let Token::Dot(..) = token {
+                        let node = Expression::node_from(token);
+                        tree.add(node);
+                        state = ExpressionState::Noun;
+                    } else if token.is_operator() {
                         let node = Expression::node_from(token);
                         tree.add(node);
                         state = ExpressionState::Noun;
