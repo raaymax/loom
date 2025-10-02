@@ -70,6 +70,7 @@ impl<'a> Tokenizer<'a> {
             },
             '+' =>  Ok(Token::Plus(self.get_location(1))),
             '-' =>  Ok(Token::Minus(self.get_location(1))),
+            '.' =>  Ok(Token::Dot(self.get_location(1))),
             '=' => {
                 if self.accept("==") {
                     return Ok(Token::Eq(p.set_range(2)));

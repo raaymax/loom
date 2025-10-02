@@ -9,6 +9,7 @@ members = [
   "crates/lexer",
   "crates/parser",
   "crates/interpreter",
+  "crates/interpreter2",
   "crates/compiler",
   "bins/lsp",
   "bins/cli",
@@ -20,6 +21,7 @@ members = [
 lexer = { path = "./crates/lexer" }
 parser = { path = "./crates/parser" }
 interpreter = { path = "./crates/interpreter" }
+interpreter2 = { path = "./crates/interpreter2" }
 compiler = { path = "./crates/compiler" }
 vm = { path = "./crates/vm" }
 cli = { path = "./bins/cli" }

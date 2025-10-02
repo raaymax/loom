@@ -253,7 +253,8 @@ pub fn compute(node: &Node, context: &Rc<RefCell<Context>>, stack: &StackFramePt
                 }
             }
             Ok(right)
-        }
+        },
+        Op::Access => todo!("Access not implemented"),
     }
 }
 

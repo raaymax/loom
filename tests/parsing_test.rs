@@ -144,6 +144,12 @@ mod expressions {
     test_parser!(expr_lambda_function,
                  "let a=fn(x) x;",
                  "{let a; (a = fn _anonymous_x x)}");
+    test_parser!(expr_property_access,
+                 "a.b", "{(a.b)}");
+    test_parser!(expr_property_access_plus,
+                 "a.b+x.d", "{((a.b) + (x.d))}");
+    test_parser!(expr_property_access_deep,
+                 "a.b.x.d", "{(((a.b).x).d)}");
     /*
     test_parser!(expr_lambda_function_eof,
                  "let a=fn(x) x",

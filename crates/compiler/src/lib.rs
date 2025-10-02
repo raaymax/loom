@@ -3,7 +3,7 @@ use std::{fmt::{Display, Formatter}};
 
 use lexer::PError;
 use parser::{Node, Op, Value};
-use vm::{Instr, Instrs, OpCode};
+use vm::{Instr, Instrs};
 
 
 struct Code {

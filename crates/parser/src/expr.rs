@@ -36,6 +36,7 @@ impl Expression {
             Token::Geq(loc) => Node::new(Op::Geq, *loc),
             Token::And(loc) => Node::new(Op::And, *loc),
             Token::Or(loc) => Node::new(Op::Or, *loc),
+            Token::Dot(loc) => Node::new(Op::Access, *loc),
             _ => {
                 panic!("Unexpected token to build expression: {}", token);
             }
@@ -130,7 +131,11 @@ impl Parser for Expression {
                     }
                 },
                 ExpressionState::Op => {
-                    if token.is_operator() {
+                    if let Token::Dot(..) = token {
+                        let node = Expression::node_from(token);
+                        tree.add(node);
+                        state = ExpressionState::Noun;
+                    } else if token.is_operator() {
                         let node = Expression::node_from(token);
                         tree.add(node);
                         state = ExpressionState::Noun;

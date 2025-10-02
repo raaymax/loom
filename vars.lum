@@ -1,14 +1,4 @@
-
-
-fn fact(x) if (x == 1) { 1 } else { x * fact(x - 1) };
-
-print("fact(5): " + fact(5));
-
-let lambda = fn(x) fact(x);
-
-let some = {
-	let x = 6;
-	lambda(x)
-};
-
-print(some);
+1 == 1 && 2 == 4;
+let a = "asd";
+a.test();
+5
